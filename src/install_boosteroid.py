@@ -7,6 +7,7 @@ and extracts it into $XDG_DATA_HOME/boosteroid/ using Python stdlib only.
 import hashlib
 import io
 import os
+import sys
 import tarfile
 import urllib.error
 import urllib.request
@@ -73,12 +74,18 @@ def extract_deb(deb_path, target_dir):
     else:
         mode = "r:"
     with tarfile.open(fileobj=io.BytesIO(raw), mode=mode) as tar:
-        tar.extractall(target_dir)
+        # filter="data" (Python 3.12+) strips dangerous paths and prevents
+        # path-traversal entries. Fall back to unfiltered on older Pythons.
+        if sys.version_info >= (3, 12):
+            tar.extractall(target_dir, filter="data")
+        else:
+            tar.extractall(target_dir)  # noqa: S202
     print(f"  Extracted to {target_dir}")
 
 
 def main():
-    install_dir = os.path.join(os.environ["XDG_DATA_HOME"], "boosteroid")
+    xdg_data = os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))
+    install_dir = os.path.join(xdg_data, "boosteroid")
     binary = os.path.join(install_dir, "opt", "BoosteroidGamesS.R.L.", "bin", "Boosteroid")
 
     if os.path.isfile(binary):

@@ -47,6 +47,12 @@ EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"
 
+# ── Force fullscreen ─────────────────────────────────────────────────────────
+# Runs in the background: polls for the Boosteroid X11 window and sends it a
+# _NET_WM_STATE_FULLSCREEN ClientMessage so it fills the Gamescope display
+# without any user interaction.
+/app/bin/boosteroid-fullscreen &
+
 # ── Launch ───────────────────────────────────────────────────────────────────
 # Add Boosteroid's bundled libraries to the search path.
 export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"

@@ -23,9 +23,11 @@ finish-args:
   - --filesystem=~/.var/app/com.valvesoftware.Steam:rw
   # User icon theme — so Steam can load the shortcut icon outside the sandbox
   - --filesystem=~/.local/share/icons:create
-  # flatpak-spawn --host: lets the xdg-open wrapper route OAuth URLs through
-  # the host system (Steam's browser in Game Mode) for Google login support
+  # flatpak-spawn --host: lets the portal intercept route OAuth URLs to Steam
   - --talk-name=org.freedesktop.Flatpak
+  # Allow sandbox to own the portal name so our fake service intercepts Qt's
+  # QDesktopServices::openUrl() calls before they reach the host portal
+  - --own-name=org.freedesktop.portal.Desktop
   # Share host /tmp so /tmp/boosteroid.log is readable from outside the sandbox
   - --filesystem=/tmp
   # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
@@ -47,6 +49,7 @@ modules:
       - gcc src/force_fullscreen.c -lX11 -o /app/bin/boosteroid-fullscreen
       - install -Dm644 version.txt /app/share/boosteroid/version
       - install -Dm755 boosteroid-launcher.sh /app/bin/boosteroid-launcher.sh
+      - install -Dm755 src/portal_openuri.py /app/lib/boosteroid/portal_openuri.py
       - install -Dm755 src/install_boosteroid.py /app/lib/boosteroid/install_boosteroid.py
       - install -Dm755 src/add-to-steam.py /app/lib/boosteroid/add-to-steam.py
       - install -Dm644 src/vdf.py /app/lib/boosteroid/vdf.py

@@ -72,6 +72,14 @@ EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"
 
+# ── Portal intercept for Google login ───────────────────────────────────────
+# Qt5 calls org.freedesktop.portal.Desktop.OpenURI via D-Bus instead of
+# xdg-open, bypassing our PATH wrapper.  We claim that portal name on the
+# sandbox proxy bus and redirect all OpenURI calls to steam://openurl/ so
+# the Steam overlay browser handles Google OAuth in both Game Mode and Desktop.
+python3 /app/lib/boosteroid/portal_openuri.py &
+sleep 0.3   # let the service register before Boosteroid starts
+
 # ── Force fullscreen ─────────────────────────────────────────────────────────
 # Runs in the background: polls for the Boosteroid X11 window and sends it a
 # _NET_WM_STATE_FULLSCREEN ClientMessage so it fills the Gamescope display

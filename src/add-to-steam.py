@@ -98,7 +98,11 @@ def _find_ctrl_config_dir(uid):
         candidate = os.path.join(root, uid, "config")
         if os.path.isdir(candidate):
             return candidate
-    return None
+    # Dir doesn't exist yet — create it under the primary Steam path.
+    primary = os.path.join(_STEAM_CTRL_CONFIGS_ROOTS[0], uid, "config")
+    os.makedirs(primary, exist_ok=True)
+    print(f"Created Steam Controller Configs dir: {primary}")
+    return primary
 
 
 def _update_configset(config_dir, configset_name, app_key):

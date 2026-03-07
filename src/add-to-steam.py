@@ -29,10 +29,10 @@ _APPID_UNSIGNED = (binascii.crc32((FLATPAK_EXE + APP_NAME).encode()) & 0xFFFFFFF
 _APPID_SIGNED = struct.unpack("<i", struct.pack("<I", _APPID_UNSIGNED))[0]
 
 # /app/share is only visible inside the sandbox; Steam runs outside it.
-# We copy the icon to the user's XDG icon theme so Steam can find it.
-_SANDBOX_ICON = "/app/share/icons/hicolor/scalable/apps/org.schelstraete.boosteroid.svg"
-_USER_ICON_DIR = os.path.expanduser("~/.local/share/icons/hicolor/scalable/apps")
-ICON_PATH = os.path.join(_USER_ICON_DIR, "org.schelstraete.boosteroid.svg")
+# Steam does NOT support SVG shortcut icons — use the 256x256 PNG.
+_SANDBOX_ICON = "/app/share/boosteroid/icon-256.png"
+_USER_ICON_DIR = os.path.expanduser("~/.local/share/icons/hicolor/256x256/apps")
+ICON_PATH = os.path.join(_USER_ICON_DIR, "org.schelstraete.boosteroid.png")
 
 
 def _install_icon():
@@ -170,11 +170,12 @@ def main():
         needs_write = True
         print(f"Added '{APP_NAME}' to Steam library ({path}) — appid={_APPID_UNSIGNED}")
         print("Restart Steam to see it in your library.")
-    elif correct_entry.get("appid") != _APPID_SIGNED:
-        # Backfill missing or stale appid so grid artwork is found.
+    elif correct_entry.get("appid") != _APPID_SIGNED or correct_entry.get("icon") != ICON_PATH:
+        # Backfill missing/stale appid or wrong icon path (SVG → PNG migration).
         correct_entry["appid"] = _APPID_SIGNED
+        correct_entry["icon"] = ICON_PATH
         needs_write = True
-        print(f"Updated appid on existing entry to {_APPID_UNSIGNED}")
+        print(f"Updated appid/icon on existing entry")
     else:
         print("Boosteroid shortcut already present and correct.")
 

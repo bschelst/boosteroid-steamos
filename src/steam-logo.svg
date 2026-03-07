@@ -19,17 +19,17 @@
     <polygon points="104,136 104,174 154,155" fill="#1a4fa8"/>
   </g>
 
-  <!-- BOOSTEROID -->
-  <text x="280" y="178"
+  <!-- BOOSTEROID — font-size reduced from 112 to 72 so text fits in 880px canvas -->
+  <text x="240" y="165"
         font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
-        font-size="112" font-weight="900"
-        fill="white" letter-spacing="-2">BOOSTEROID</text>
+        font-size="72" font-weight="900"
+        fill="white" letter-spacing="-1">BOOSTEROID</text>
 
   <!-- Gradient underline -->
-  <rect x="280" y="196" width="586" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
+  <rect x="240" y="182" width="580" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
 
   <!-- Tagline -->
-  <text x="282" y="242"
-        font-family="Arial, sans-serif" font-size="26"
-        fill="#7a9acc" letter-spacing="5">CLOUD GAMING  ·  STEAM DECK</text>
+  <text x="242" y="224"
+        font-family="Arial, sans-serif" font-size="22"
+        fill="#7a9acc" letter-spacing="4">CLOUD GAMING  ·  STEAM DECK</text>
 </svg>

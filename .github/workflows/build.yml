@@ -48,10 +48,11 @@ jobs:
           VERSION="${REF_NAME#v}"
           DATE="$(date +%Y-%m-%d)"
           sed -i "s/FLATPAK_VERSION/$VERSION/; s/FLATPAK_DATE/$DATE/" org.schelstraete.boosteroid.metainfo.xml
-          rsvg-convert -w 1920 -h 620 src/steam-hero.svg    -o src/steam-hero.png
-          rsvg-convert -w 600  -h 900 src/steam-capsule.svg -o src/steam-capsule.png
-          rsvg-convert -w 920  -h 430 src/steam-hero.svg    -o src/steam-wide.png
-          rsvg-convert -w 880  -h 280 src/steam-logo.svg    -o src/steam-logo.png
+          rsvg-convert -w 1920 -h 620 src/steam-hero.svg        -o src/steam-hero.png
+          rsvg-convert -w 600  -h 900 src/steam-capsule.svg    -o src/steam-capsule.png
+          rsvg-convert -w 920  -h 430 src/steam-hero.svg        -o src/steam-wide.png
+          rsvg-convert -w 880  -h 280 src/steam-logo.svg        -o src/steam-logo.png
+          rsvg-convert -w 256  -h 256 org.schelstraete.boosteroid.svg -o src/icon-256.png
           flatpak-builder \
             --user \
             --install-deps-from=flathub \

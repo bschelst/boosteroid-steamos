@@ -489,10 +489,6 @@
 				"disabled_activators"		{}
 			}
 		}
-		"settings"
-		{
-			"layer"		"1"
-		}
 	}
 	"group"
 	{
@@ -517,10 +513,6 @@
 				"disabled_activators"		{}
 			}
 		}
-		"settings"
-		{
-			"layer"		"1"
-		}
 	}
 	"group"
 	{
@@ -544,10 +536,6 @@
 				}
 				"disabled_activators"		{}
 			}
-		}
-		"settings"
-		{
-			"layer"		"1"
 		}
 	}
 	"group"
@@ -576,7 +564,6 @@
 		"settings"
 		{
 			"output_trigger"		"1"
-			"layer"		"1"
 		}
 	}
 	"group"
@@ -605,7 +592,6 @@
 		"settings"
 		{
 			"output_trigger"		"2"
-			"layer"		"1"
 		}
 	}
 	"group"
@@ -672,10 +658,6 @@
 				}
 				"disabled_activators"		{}
 			}
-		}
-		"settings"
-		{
-			"layer"		"1"
 		}
 	}
 	"group"
@@ -771,10 +753,6 @@
 				"disabled_activators"		{}
 			}
 		}
-		"settings"
-		{
-			"layer"		"1"
-		}
 	}
 	"group"
 	{
@@ -798,10 +776,6 @@
 				}
 				"disabled_activators"		{}
 			}
-		}
-		"settings"
-		{
-			"layer"		"1"
 		}
 	}
 	"preset"

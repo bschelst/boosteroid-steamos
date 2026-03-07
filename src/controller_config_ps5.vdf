@@ -390,7 +390,7 @@
 			{
 				"activators"
 				{
-					"Full_Press"
+					"Double_Press"
 					{
 						"bindings"
 						{
@@ -766,7 +766,7 @@
 			{
 				"activators"
 				{
-					"Full_Press"
+					"Double_Press"
 					{
 						"bindings"
 						{

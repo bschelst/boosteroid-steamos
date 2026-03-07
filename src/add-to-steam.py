@@ -78,6 +78,24 @@ def find_shortcuts_vdf():
 
 
 _GRID_SRC = "/app/share/boosteroid/grid"
+_CONTROLLER_CONFIG_SRC = "/app/share/boosteroid/controller_config.vdf"
+
+
+def _install_controller_config(shortcuts_vdf_path):
+    """Install Steam Input controller layout for this app (Mouse+KB default, L4 toggles Gamepad)."""
+    src = _CONTROLLER_CONFIG_SRC
+    if not os.path.isfile(src):
+        return
+    config_dir = os.path.join(
+        os.path.dirname(shortcuts_vdf_path), "controller_configs", "apps"
+    )
+    os.makedirs(config_dir, exist_ok=True)
+    dst = os.path.join(config_dir, f"{_APPID_UNSIGNED}.vdf")
+    # Only write if missing — don't overwrite user customisations.
+    if not os.path.exists(dst):
+        shutil.copy2(src, dst)
+        os.utime(dst, None)
+        print(f"Controller config installed: {dst}")
 
 
 def _install_grid_images(shortcuts_vdf_path):
@@ -186,6 +204,7 @@ def main():
 
     # Always install grid images — repairs missing artwork on every launch
     _install_grid_images(path)
+    _install_controller_config(path)
 
 
 if __name__ == "__main__":

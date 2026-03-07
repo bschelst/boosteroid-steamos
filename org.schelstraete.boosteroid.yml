@@ -61,6 +61,7 @@ modules:
       - install -Dm644 src/steam-capsule.png /app/share/boosteroid/grid/capsule.png
       - install -Dm644 src/steam-wide.png    /app/share/boosteroid/grid/wide.png
       - install -Dm644 src/steam-logo.png    /app/share/boosteroid/grid/logo.png
+      - install -Dm644 src/controller_config.vdf /app/share/boosteroid/controller_config.vdf
     sources:
       - type: dir
         path: .

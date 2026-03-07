@@ -20,16 +20,14 @@
 			"title"		"Mouse + Keyboard"
 			"legacy_set"		"1"
 		}
-	}
-	"action_layers"
-	{
 		"Gamepad"
 		{
 			"title"		"Gamepad"
 			"legacy_set"		"1"
-			"set_layer"		"1"
-			"parent_set_name"		"Default"
 		}
+	}
+	"action_layers"
+	{
 	}
 	"localization"
 	{

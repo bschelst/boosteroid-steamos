@@ -9,7 +9,7 @@ On first launch, the Boosteroid client is downloaded from boosteroid.com, instal
 Download the latest `.flatpak` from [Releases](https://github.com/bschelst/boosteroid-steamos/releases), then:
 
 ```bash
-flatpak install --user org.schelstraete.boosteroid.flatpak
+flatpak install --user ./org.schelstraete.boosteroid.flatpak
 flatpak run org.schelstraete.boosteroid
 ```
 
@@ -27,7 +27,7 @@ flatpak-builder --user --force-clean build-dir org.schelstraete.boosteroid.yml
 flatpak build-bundle ~/.local/share/flatpak/repo org.schelstraete.boosteroid.flatpak org.schelstraete.boosteroid
 
 # Install locally
-flatpak install --user org.schelstraete.boosteroid.flatpak
+flatpak install --user ./org.schelstraete.boosteroid.flatpak
 ```
 
 ## Video decoder options
@@ -37,6 +37,7 @@ Pass flags when launching to select the decoder:
 ```bash
 flatpak run org.schelstraete.boosteroid -vaapi   # VA-API (recommended on AMD/Intel)
 flatpak run org.schelstraete.boosteroid -vdpau   # VDPAU (NVIDIA)
+flatpak run org.schelstraete.boosteroid -cuda    # CUDA (NVIDIA with CUDA support)
 flatpak run org.schelstraete.boosteroid -s        # software decoder
 ```
 

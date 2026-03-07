@@ -3,3 +3,4 @@ build-dir/
 repo/
 *.flatpak
 __pycache__/
+*.pyc

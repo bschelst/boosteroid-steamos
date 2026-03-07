@@ -316,6 +316,14 @@
 							"binding"		"key_press TAB, , "
 						}
 					}
+					"Double_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press LEFT_CONTROL, , "
+							"binding"		"key_press F2, , "
+						}
+					}
 				}
 				"disabled_activators"		{}
 			}
@@ -689,6 +697,14 @@
 						"bindings"
 						{
 							"binding"		"xinput_button select, , "
+						}
+					}
+					"Double_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press LEFT_CONTROL, , "
+							"binding"		"key_press F2, , "
 						}
 					}
 				}

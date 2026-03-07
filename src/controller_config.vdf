@@ -444,6 +444,21 @@
 				}
 				"disabled_activators"		{}
 			}
+			"button_back_right_lower"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press LEFT_CONTROL, , "
+							"binding"		"key_press F2, , "
+						}
+					}
+				}
+				"disabled_activators"		{}
+			}
 		}
 	}
 	"group"
@@ -769,6 +784,21 @@
 						"bindings"
 						{
 							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
+						}
+					}
+				}
+				"disabled_activators"		{}
+			}
+			"button_back_right_lower"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press LEFT_CONTROL, , "
+							"binding"		"key_press F2, , "
 						}
 					}
 				}

@@ -5,6 +5,14 @@
 
 set -euo pipefail
 
+# ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
+LOG=/tmp/boosteroid.log
+exec > >(tee -a "$LOG") 2>&1
+echo "=== Boosteroid launch $(date) ==="
+echo "DISPLAY=${DISPLAY:-<unset>}  WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-<unset>}"
+echo "GAMESCOPE_WAYLAND_DISPLAY=${GAMESCOPE_WAYLAND_DISPLAY:-<unset>}"
+echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}"
+
 XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 INSTALL_DIR="${XDG_DATA_HOME}/boosteroid"
@@ -42,7 +50,9 @@ _OVERRIDE_BIN="${XDG_RUNTIME_DIR}/boosteroid-bin"
 mkdir -p "${_OVERRIDE_BIN}"
 cat > "${_OVERRIDE_BIN}/xdg-open" << 'EOF'
 #!/bin/bash
-exec flatpak-spawn --host xdg-open "$@"
+echo "[xdg-open] called with: $*" >> /tmp/boosteroid.log
+flatpak-spawn --host xdg-open "$@"
+echo "[xdg-open] flatpak-spawn exit=$?" >> /tmp/boosteroid.log
 EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"
@@ -51,7 +61,7 @@ export PATH="${_OVERRIDE_BIN}:${PATH}"
 # Runs in the background: polls for the Boosteroid X11 window and sends it a
 # _NET_WM_STATE_FULLSCREEN ClientMessage so it fills the Gamescope display
 # without any user interaction.
-/app/bin/boosteroid-fullscreen &
+/app/bin/boosteroid-fullscreen >> "$LOG" 2>&1 &
 
 # ── Launch ───────────────────────────────────────────────────────────────────
 # Add Boosteroid's bundled libraries to the search path.

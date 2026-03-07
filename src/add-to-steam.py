@@ -15,7 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vdf  # noqa: E402  (vendored)
 
 APP_NAME = "Boosteroid"
-FLATPAK_CMD = "flatpak run org.schelstraete.boosteroid"
+# Steam requires Exe to be quoted so it parses the full command correctly
+FLATPAK_CMD = '"flatpak run org.schelstraete.boosteroid"'
 
 # /app/share is only visible inside the sandbox; Steam runs outside it.
 # We copy the icon to the user's XDG icon theme so Steam can find it.
@@ -26,9 +27,12 @@ ICON_PATH = os.path.join(_USER_ICON_DIR, "org.schelstraete.boosteroid.svg")
 
 def _install_icon():
     if not os.path.isfile(_SANDBOX_ICON):
+        print(f"WARNING: sandbox icon not found at {_SANDBOX_ICON}", file=sys.stderr)
         return
     os.makedirs(_USER_ICON_DIR, exist_ok=True)
     shutil.copy2(_SANDBOX_ICON, ICON_PATH)
+    print(f"Icon installed to {ICON_PATH}")
+
 
 # Steam can live in multiple locations depending on how it is installed
 STEAM_ROOTS = [
@@ -39,11 +43,27 @@ STEAM_ROOTS = [
 
 
 def find_shortcuts_vdf():
+    """
+    Return the path to shortcuts.vdf, even if it doesn't exist yet.
+    Steam may not create it until the first non-Steam game is added via the UI,
+    so we fall back to constructing the path from the userdata directory.
+    """
     for root in STEAM_ROOTS:
+        # Prefer an existing file
         pattern = os.path.join(root, "userdata", "*", "config", "shortcuts.vdf")
         matches = glob.glob(pattern)
         if matches:
+            print(f"Found existing shortcuts.vdf: {matches[0]}")
             return matches[0]
+
+        # File doesn't exist yet — find the userdata dir and build the path
+        userdata_pattern = os.path.join(root, "userdata", "*")
+        userdata_dirs = [d for d in glob.glob(userdata_pattern) if os.path.isdir(d)]
+        if userdata_dirs:
+            path = os.path.join(userdata_dirs[0], "config", "shortcuts.vdf")
+            print(f"shortcuts.vdf not found, will create at: {path}")
+            return path
+
     return None
 
 
@@ -52,7 +72,8 @@ def main():
     path = find_shortcuts_vdf()
     if not path:
         print(
-            "Steam userdata not found — skipping shortcut creation.\n"
+            "Steam userdata directory not found — skipping shortcut creation.\n"
+            f"Searched: {STEAM_ROOTS}\n"
             "You can manually add 'flatpak run org.schelstraete.boosteroid' as a non-Steam game.",
             file=sys.stderr,
         )

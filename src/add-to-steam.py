@@ -78,7 +78,10 @@ def find_shortcuts_vdf():
 
 
 _GRID_SRC = "/app/share/boosteroid/grid"
-_CONTROLLER_CONFIG_SRC = "/app/share/boosteroid/controller_config.vdf"
+_CONTROLLER_CONFIGS = {
+    "configset_controller_neptune.vdf": "/app/share/boosteroid/controller_config.vdf",
+    "configset_controller_ps5.vdf":     "/app/share/boosteroid/controller_config_ps5.vdf",
+}
 
 # Steam Controller Configs are stored here (not in userdata).
 # Non-Steam shortcuts use lowercase app name as the per-app directory key.
@@ -98,12 +101,11 @@ def _find_ctrl_config_dir(uid):
     return None
 
 
-def _update_configset(config_dir, app_key):
-    """Register our app in configset_controller_neptune.vdf with autosave=1."""
-    configset_path = os.path.join(config_dir, "configset_controller_neptune.vdf")
+def _update_configset(config_dir, configset_name, app_key):
+    """Register our app in the given configset file with autosave=1."""
+    configset_path = os.path.join(config_dir, configset_name)
     if not os.path.isfile(configset_path):
-        print(f"Configset not found, skipping: {configset_path}", file=sys.stderr)
-        return
+        return  # Controller type not present on this system — skip silently
     with open(configset_path, "r") as f:
         data = vdf.load(f, mapper=vdf.VDFDict)
     root = data.get("controller_config", data)
@@ -111,22 +113,18 @@ def _update_configset(config_dir, app_key):
         root[app_key] = vdf.VDFDict({"autosave": "1"})
         with open(configset_path, "w") as f:
             vdf.dump(data, f, pretty=True)
-        print(f"Registered '{app_key}' in configset_controller_neptune.vdf")
+        print(f"Registered '{app_key}' in {configset_name}")
     else:
-        print(f"Controller configset entry already present for '{app_key}'")
+        print(f"Controller configset entry already present in {configset_name}")
 
 
 def _install_controller_config(shortcuts_vdf_path):
     """Install Steam Input controller layout (Mouse+KB default, L4 toggles Gamepad).
 
-    Steam reads per-app configs from:
-      steamapps/common/Steam Controller Configs/{uid}/config/{app_name_lower}/controller_neptune.vdf
-    registered via configset_controller_neptune.vdf with "autosave" "1".
+    Installs configs for Steam Deck (controller_neptune) and PS5 DualSense (controller_ps5).
+    Files go in: steamapps/common/Steam Controller Configs/{uid}/config/{app_name_lower}/
+    Each is registered in its configset with "autosave" "1".
     """
-    src = _CONTROLLER_CONFIG_SRC
-    if not os.path.isfile(src):
-        return
-
     uid = os.path.basename(os.path.dirname(shortcuts_vdf_path))
 
     # Remove stale file from the wrong location (old installs put it in userdata).
@@ -143,21 +141,26 @@ def _install_controller_config(shortcuts_vdf_path):
         return
 
     app_dir = os.path.join(config_dir, _APP_KEY)
-    dst = os.path.join(app_dir, "controller_neptune.vdf")
+    os.makedirs(app_dir, exist_ok=True)
 
-    # Only write if missing — don't overwrite user customisations.
-    if not os.path.exists(dst):
-        os.makedirs(app_dir, exist_ok=True)
-        with open(src, "r") as f:
-            cfg = vdf.load(f, mapper=vdf.VDFDict)
-        cfg["controller_mappings"]["export_type"] = "unknown"
-        with open(dst, "w") as f:
-            vdf.dump(cfg, f, pretty=True)
-        os.utime(dst, None)
-        print(f"Controller config installed: {dst}")
-        _update_configset(config_dir, _APP_KEY)
-    else:
-        print(f"Controller config already present: {dst}")
+    for configset_name, src in _CONTROLLER_CONFIGS.items():
+        if not os.path.isfile(src):
+            continue
+        # Derive the per-controller filename from the configset name:
+        #   configset_controller_neptune.vdf  →  controller_neptune.vdf
+        ctrl_filename = configset_name.replace("configset_", "")
+        dst = os.path.join(app_dir, ctrl_filename)
+        if not os.path.exists(dst):
+            with open(src, "r") as f:
+                cfg = vdf.load(f, mapper=vdf.VDFDict)
+            cfg["controller_mappings"]["export_type"] = "unknown"
+            with open(dst, "w") as f:
+                vdf.dump(cfg, f, pretty=True)
+            os.utime(dst, None)
+            print(f"Controller config installed: {dst}")
+            _update_configset(config_dir, configset_name, _APP_KEY)
+        else:
+            print(f"Controller config already present: {dst}")
 
 
 def _install_grid_images(shortcuts_vdf_path):

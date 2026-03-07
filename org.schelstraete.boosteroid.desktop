@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Boosteroid
+GenericName=Cloud Gaming
+Comment=Stream PC games from the cloud with Boosteroid
+Exec=boosteroid-launcher.sh
+Icon=org.schelstraete.boosteroid
+Terminal=false
+Type=Application
+Categories=Game;
+Keywords=cloud;gaming;streaming;boosteroid;
+StartupNotify=true
+X-Flatpak=org.schelstraete.boosteroid

@@ -233,7 +233,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"key_press UP, , "
+							"binding"		"key_press UP_ARROW, , "
 						}
 					}
 				}
@@ -247,7 +247,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"key_press DOWN, , "
+							"binding"		"key_press DOWN_ARROW, , "
 						}
 					}
 				}
@@ -261,7 +261,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"key_press LEFT, , "
+							"binding"		"key_press LEFT_ARROW, , "
 						}
 					}
 				}
@@ -275,7 +275,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"key_press RIGHT, , "
+							"binding"		"key_press RIGHT_ARROW, , "
 						}
 					}
 				}

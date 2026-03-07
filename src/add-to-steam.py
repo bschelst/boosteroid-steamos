@@ -15,9 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vdf  # noqa: E402  (vendored)
 
 APP_NAME = "Boosteroid"
-# Use bash -c so Steam doesn't need flatpak in its PATH.
-FLATPAK_EXE  = "/bin/bash"
-FLATPAK_ARGS = "-c 'flatpak run org.schelstraete.boosteroid'"
+FLATPAK_EXE  = "flatpak"
+FLATPAK_ARGS = "run org.schelstraete.boosteroid"
 
 # /app/share is only visible inside the sandbox; Steam runs outside it.
 # We copy the icon to the user's XDG icon theme so Steam can find it.
@@ -88,13 +87,22 @@ def main():
 
     shortcuts = data.setdefault("shortcuts", vdf.VDFDict())
 
-    # Idempotency: skip if already present (check both old and new Exe formats)
+    # Remove any stale entries (wrong Exe from previous installs) and re-add cleanly
+    stale_keys = [
+        k for k, e in shortcuts.items()
+        if e.get("AppName") == APP_NAME and e.get("Exe") != FLATPAK_EXE
+    ]
+    for k in stale_keys:
+        print(f"Removing stale shortcut entry (wrong Exe): {shortcuts[k].get('Exe')!r}")
+        del shortcuts[k]
+
+    # Idempotency: skip if already correct
     for entry in shortcuts.values():
-        if entry.get("AppName") == APP_NAME or entry.get("Exe") == FLATPAK_EXE:
-            print("Boosteroid shortcut already present in Steam library.")
+        if entry.get("AppName") == APP_NAME and entry.get("Exe") == FLATPAK_EXE:
+            print("Boosteroid shortcut already present and correct.")
             return
 
-    # Find the next unused numeric index (Steam may use sparse non-sequential keys)
+    # Find the next unused numeric index
     used = set(shortcuts.keys())
     idx = 0
     while str(idx) in used:

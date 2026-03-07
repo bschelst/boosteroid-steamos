@@ -3,11 +3,11 @@
 	"version"		"3"
 	"revision"		"1"
 	"title"		"Boosteroid"
-	"description"		"Default: Mouse+Keyboard. Press L4 (back-left grip) to toggle Gamepad mode."
+	"description"		"Default: Mouse+Keyboard. Tap trackpad=Enter, double-tap or press L4/R4 to toggle Gamepad."
 	"creator"		""
 	"progenitor"		""
 	"url"		""
-	"export_type"		"personal_local"
+	"export_type"		"unknown"
 	"controller_type"		"controller_neptune"
 	"controller_caps"		"23117823"
 	"major_revision"		"0"
@@ -36,7 +36,7 @@
 		"english"
 		{
 			"title"		"Boosteroid"
-			"description"		"Default: Mouse+Keyboard. Press L4 (back-left grip) to toggle Gamepad mode."
+			"description"		"Default: Mouse+Keyboard. Tap trackpad=Enter, double-tap or press L4/R4 to toggle Gamepad."
 			"Default"		"Mouse + Keyboard"
 			"Gamepad"		"Gamepad"
 		}
@@ -115,6 +115,27 @@
 		"description"		""
 		"inputs"
 		{
+			"touch"
+			{
+				"activators"
+				{
+					"Short_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press RETURN, , "
+						}
+					}
+					"Double_Press"
+					{
+						"bindings"
+						{
+							"binding"		"controller_action toggle_layer 2 1 1, , "
+						}
+					}
+				}
+				"disabled_activators"		{}
+			}
 			"click"
 			{
 				"activators"
@@ -129,6 +150,34 @@
 				}
 				"disabled_activators"		{}
 			}
+		}
+	}
+	"group"
+	{
+		"id"		"8"
+		"mode"		"absolute_mouse"
+		"name"		""
+		"description"		""
+		"inputs"
+		{
+			"touch"
+			{
+				"activators"
+				{
+					"Double_Press"
+					{
+						"bindings"
+						{
+							"binding"		"controller_action toggle_layer 2 1 1, , "
+						}
+					}
+				}
+				"disabled_activators"		{}
+			}
+		}
+		"settings"
+		{
+			"layer"		"1"
 		}
 	}
 	"group"
@@ -777,6 +826,7 @@
 		"name"		"Gamepad"
 		"group_source_bindings"
 		{
+			"8"		"right_trackpad active"
 			"10"		"button_diamond active"
 			"11"		"joystick active"
 			"12"		"right_joystick active"

@@ -1,0 +1,39 @@
+app-id: org.schelstraete.boosteroid
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: boosteroid-launcher.sh
+
+finish-args:
+  # Network: download binary on first run + stream games
+  - --share=network
+  # IPC namespace: required for X11 shared memory (MIT-SHM)
+  - --share=ipc
+  # Display: support both X11 and Wayland
+  - --socket=x11
+  - --socket=wayland
+  # Audio via PulseAudio / PipeWire compatibility layer
+  - --socket=pulseaudio
+  # GPU access for hardware video decoding (VA-API / VDPAU)
+  - --device=dri
+  # Steam shortcuts.vdf — native Steam install
+  - --filesystem=~/.local/share/Steam:rw
+  - --filesystem=~/.steam:rw
+  # Steam shortcuts.vdf — Flatpak Steam install
+  - --filesystem=~/.var/app/com.valvesoftware.Steam:rw
+  # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
+  - --env=LD_PRELOAD=
+
+modules:
+  - name: boosteroid
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 boosteroid-launcher.sh /app/bin/boosteroid-launcher.sh
+      - install -Dm755 src/install_boosteroid.py /app/lib/boosteroid/install_boosteroid.py
+      - install -Dm755 src/add-to-steam.py /app/lib/boosteroid/add-to-steam.py
+      - install -Dm644 src/vdf.py /app/lib/boosteroid/vdf.py
+      - install -Dm644 org.schelstraete.boosteroid.desktop /app/share/applications/org.schelstraete.boosteroid.desktop
+      - install -Dm644 org.schelstraete.boosteroid.svg /app/share/icons/hicolor/scalable/apps/org.schelstraete.boosteroid.svg
+    sources:
+      - type: dir
+        path: .

@@ -101,6 +101,7 @@ A Steam Input layout is installed automatically on first launch. It has two mode
 |---|---|
 | Right trackpad | Mouse cursor |
 | Right trackpad click | Left click |
+| Right trackpad double-tap | Switch to Gamepad mode |
 | Left stick | Mouse movement |
 | Left stick click | Left click |
 | **A** | Left click |
@@ -119,12 +120,13 @@ A Steam Input layout is installed automatically on first launch. It has two mode
 
 Full xinput gamepad passthrough — all buttons, sticks and triggers are passed straight through to the game.
 
-### Switching modes
+### Grip buttons (both modes)
 
 | Input | Action |
 |---|---|
-| **L5 or R5** (upper grip buttons) | Switch between Mouse+Keyboard ↔ Gamepad |
-| **R4** (lower right grip) | Ctrl+F2 (Boosteroid layout shortcut, active during streaming) |
+| **L4** (lower left grip) | Alt+R |
+| **L5** (upper left grip) | Switch between Mouse+Keyboard ↔ Gamepad |
+| **R5** (upper right grip) | Ctrl+F2 (Boosteroid layout shortcut, active during streaming) |
 
 > **Note:** The layout is overwritten on every launch to keep it up to date.
 

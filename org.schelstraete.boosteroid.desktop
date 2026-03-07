@@ -9,4 +9,5 @@ Type=Application
 Categories=Game;
 Keywords=cloud;gaming;streaming;boosteroid;
 StartupNotify=true
+StartupWMClass=boosteroid
 X-Flatpak=org.schelstraete.boosteroid

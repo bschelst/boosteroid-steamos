@@ -98,15 +98,19 @@ def on_name_acquired(_conn, name, *_args):
 
 
 def on_name_lost(_conn, name, *_args):
-    log(f"portal name lost/denied: {name} — intercept disabled")
-    sys.exit(0)
+    # This fires when: (a) the name was never acquired (already taken) or
+    # (b) we lost it after acquiring it.  Log but keep the GLib loop alive
+    # so the registered D-Bus object stays reachable if we ever do own it.
+    log(f"portal name lost/denied: {name} — will retry with REPLACE")
 
 
 log("portal service starting (gi.repository.Gio)...")
+# REPLACE: take the name from whoever holds it on the Flatpak proxy bus.
+# The --own-name=org.freedesktop.portal.Desktop manifest permission allows this.
 Gio.bus_own_name(
     Gio.BusType.SESSION,
     "org.freedesktop.portal.Desktop",
-    Gio.BusNameOwnerFlags.NONE,
+    Gio.BusNameOwnerFlags.REPLACE,
     on_bus_acquired,
     on_name_acquired,
     on_name_lost,

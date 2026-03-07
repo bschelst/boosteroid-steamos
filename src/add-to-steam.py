@@ -154,17 +154,14 @@ def _install_controller_config(shortcuts_vdf_path):
         #   configset_controller_neptune.vdf  →  controller_neptune.vdf
         ctrl_filename = configset_name.replace("configset_", "")
         dst = os.path.join(app_dir, ctrl_filename)
-        if not os.path.exists(dst):
-            with open(src, "r") as f:
-                cfg = vdf.load(f, mapper=vdf.VDFDict)
-            cfg["controller_mappings"]["export_type"] = "unknown"
-            with open(dst, "w") as f:
-                vdf.dump(cfg, f, pretty=True)
-            os.utime(dst, None)
-            print(f"Controller config installed: {dst}")
-            _update_configset(config_dir, configset_name, _APP_KEY)
-        else:
-            print(f"Controller config already present: {dst}")
+        with open(src, "r") as f:
+            cfg = vdf.load(f, mapper=vdf.VDFDict)
+        cfg["controller_mappings"]["export_type"] = "unknown"
+        with open(dst, "w") as f:
+            vdf.dump(cfg, f, pretty=True)
+        os.utime(dst, None)
+        print(f"Controller config installed: {dst}")
+        _update_configset(config_dir, configset_name, _APP_KEY)
 
 
 def _install_grid_images(shortcuts_vdf_path):

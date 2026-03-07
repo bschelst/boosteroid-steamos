@@ -91,6 +91,40 @@ flatpak run org.schelstraete.boosteroid -s        # software decoder
 
 ---
 
+## 🎮 Controller layout
+
+A Steam Input layout is installed automatically on first launch. It has two modes you can switch between at any time.
+
+### Default mode — Mouse + Keyboard
+
+| Input | Action |
+|---|---|
+| Right trackpad | Mouse cursor |
+| Right trackpad click | Left click |
+| Left stick | Mouse movement |
+| Left stick click | Left click |
+| **A** | Left click |
+| **B** | Right click |
+| **X** | Space |
+| **Y** | Escape |
+| D-pad | Arrow keys |
+| Left trigger | Left click |
+| Right trigger | Right click |
+| LB | Page Up |
+| RB | Page Down |
+| Start | Escape |
+| Select | Tab |
+
+### Gamepad mode
+
+Press **L4 or R4** (the back grip buttons) to toggle full xinput gamepad passthrough — all buttons, sticks and triggers are passed straight through to the game.
+
+Press **L4 or R4** again to switch back to Mouse + Keyboard mode.
+
+> **Tip:** The layout is installed only once. You can customise it afterwards via **Steam → Controller Settings** for the Boosteroid shortcut without it being overwritten on the next launch.
+
+---
+
 ## 🗑️ Uninstall
 
 ```bash

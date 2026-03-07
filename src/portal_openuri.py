@@ -56,7 +56,7 @@ PORTAL_XML = """
 REQUEST_PATH = "/org/freedesktop/portal/desktop/request/boosteroid/1"
 
 
-def on_method_call(conn, sender, path, iface, method, params, invoc, _user_data):
+def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
     if method == "OpenURI":
         uri = params[1]
         log(f"OpenURI: {uri}")

@@ -91,12 +91,16 @@ def _install_grid_images(shortcuts_vdf_path):
         "wide.png":    f"{app_id}.png",
         "logo.png":    f"{app_id}_logo.png",
     }
+    print(f"Grid dir: {grid_dst}")
     for src_name, dst_name in mappings.items():
         src = os.path.join(_GRID_SRC, src_name)
         dst = os.path.join(grid_dst, dst_name)
         if os.path.isfile(src):
             shutil.copy2(src, dst)
-            print(f"Grid image installed: {dst_name}")
+            os.utime(dst, None)  # Reset epoch-0 timestamps from Flatpak bundle
+            print(f"Grid image installed: {dst}")
+        else:
+            print(f"Grid source missing: {src}", file=sys.stderr)
 
 
 def main():

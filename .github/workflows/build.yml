@@ -70,4 +70,5 @@ jobs:
           files: |
             org.schelstraete.boosteroid.flatpak
             install.sh
+            boosteroid-steamos.desktop
           generate_release_notes: true

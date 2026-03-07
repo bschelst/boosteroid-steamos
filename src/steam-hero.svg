@@ -1,0 +1,79 @@
+<svg width="1920" height="620" viewBox="0 0 1920 620" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1920" y2="620" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#080c18"/>
+      <stop offset="1" stop-color="#120828"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1920" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2096D9"/>
+      <stop offset="1" stop-color="#5C35EE"/>
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2096D9"/>
+      <stop offset="1" stop-color="#5C35EE"/>
+    </linearGradient>
+    <radialGradient id="rightGlow" cx="1480" cy="310" r="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2040a0" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#080c18" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="leftGlow" cx="200" cy="350" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1060b0" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#080c18" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softglow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="620" fill="url(#bg)"/>
+  <rect width="1920" height="620" fill="url(#rightGlow)"/>
+  <rect width="1920" height="620" fill="url(#leftGlow)"/>
+
+  <!-- Subtle grid lines -->
+  <g stroke="#1a2a50" stroke-width="1" opacity="0.4">
+    <line x1="0" y1="155" x2="1920" y2="155"/>
+    <line x1="0" y1="310" x2="1920" y2="310"/>
+    <line x1="0" y1="465" x2="1920" y2="465"/>
+    <line x1="480" y1="0" x2="480" y2="620"/>
+    <line x1="960" y1="0" x2="960" y2="620"/>
+    <line x1="1440" y1="0" x2="1440" y2="620"/>
+  </g>
+
+  <!-- Large cloud icon — right side -->
+  <g transform="translate(1170, 50) scale(2.03)" filter="url(#softglow)">
+    <circle cx="88"  cy="136" r="40" fill="white" opacity="0.92"/>
+    <circle cx="130" cy="112" r="48" fill="white" opacity="0.92"/>
+    <circle cx="172" cy="136" r="34" fill="white" opacity="0.92"/>
+    <rect x="50" y="136" width="154" height="44" rx="6" fill="white" opacity="0.92"/>
+    <polygon points="104,136 104,174 154,155" fill="#1a4fa8"/>
+  </g>
+
+  <!-- Vertical accent bar -->
+  <rect x="72" y="130" width="6" height="340" rx="3" fill="url(#accent)"/>
+
+  <!-- BOOSTEROID -->
+  <text x="108" y="282"
+        font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+        font-size="118" font-weight="900"
+        fill="white" letter-spacing="-2">BOOSTEROID</text>
+
+  <!-- Gradient underline -->
+  <rect x="108" y="302" width="680" height="5" rx="2.5" fill="url(#accent)" opacity="0.85"/>
+
+  <!-- Tagline -->
+  <text x="112" y="368"
+        font-family="Arial, sans-serif" font-size="34" font-weight="400"
+        fill="#7a9acc" letter-spacing="5">CLOUD GAMING  ·  STEAM DECK</text>
+
+  <!-- "unofficial" pill -->
+  <rect x="108" y="406" width="198" height="46" rx="23"
+        fill="none" stroke="#5C35EE" stroke-width="2" opacity="0.75"/>
+  <text x="207" y="436"
+        font-family="Arial, sans-serif" font-size="20"
+        fill="#9980e8" text-anchor="middle" letter-spacing="2">unofficial</text>
+
+  <!-- Bottom gradient bar -->
+  <rect x="0" y="605" width="1920" height="15" fill="url(#accent)" opacity="0.5"/>
+</svg>

@@ -15,8 +15,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vdf  # noqa: E402  (vendored)
 
 APP_NAME = "Boosteroid"
-# Steam requires Exe to be quoted so it parses the full command correctly
-FLATPAK_CMD = '"flatpak run org.schelstraete.boosteroid"'
+# Split exe + args so Steam can execute it correctly on Linux.
+# Using the full path avoids PATH lookup issues when Steam launches the shortcut.
+FLATPAK_EXE  = "/usr/bin/flatpak"
+FLATPAK_ARGS = "run org.schelstraete.boosteroid"
 
 # /app/share is only visible inside the sandbox; Steam runs outside it.
 # We copy the icon to the user's XDG icon theme so Steam can find it.
@@ -87,9 +89,9 @@ def main():
 
     shortcuts = data.setdefault("shortcuts", vdf.VDFDict())
 
-    # Idempotency: skip if already present
+    # Idempotency: skip if already present (check both old and new Exe formats)
     for entry in shortcuts.values():
-        if entry.get("AppName") == APP_NAME or entry.get("Exe") == FLATPAK_CMD:
+        if entry.get("AppName") == APP_NAME or entry.get("Exe") == FLATPAK_EXE:
             print("Boosteroid shortcut already present in Steam library.")
             return
 
@@ -102,11 +104,11 @@ def main():
     shortcuts[index] = vdf.VDFDict(
         {
             "AppName": APP_NAME,
-            "Exe": FLATPAK_CMD,
+            "Exe": FLATPAK_EXE,
             "StartDir": os.path.expanduser("~"),
             "icon": ICON_PATH,
             "ShortcutPath": "",
-            "LaunchOptions": "",
+            "LaunchOptions": FLATPAK_ARGS,
             "IsHidden": 0,
             "AllowDesktopConfig": 1,
             "AllowOverlay": 1,

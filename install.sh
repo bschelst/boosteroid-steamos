@@ -50,17 +50,23 @@ ok "Download complete"
 
 step "Installing (this may take a minute on first run)..."
 flatpak install --user -y "$TMP_FLATPAK"
+ok "Flatpak installed"
+
+step "Adding Boosteroid to your Steam library..."
+flatpak run --command=python3 org.schelstraete.boosteroid \
+    /app/lib/boosteroid/add-to-steam.py \
+    && ok "Steam shortcut added — restart Steam to see it" \
+    || printf "${Y}  !   Could not add Steam shortcut automatically.\n${R}      Add manually: flatpak run org.schelstraete.boosteroid\n"
 
 printf "\n"
 printf "${B}  ╔══════════════════════════════════════════════════════════╗${R}\n"
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
 printf "${B}  ║${R}    ${G}${BOLD}✓  Done!${R}                                            ${B}║${R}\n"
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
-printf "${B}  ║${R}    Launch ${W}Boosteroid (unofficial)${R} from your app menu     ${B}║${R}\n"
-printf "${B}  ║${R}    or Steam library.                                     ${B}║${R}\n"
+printf "${B}  ║${R}    ${W}Restart Steam${R} then find Boosteroid in your library.  ${B}║${R}\n"
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
 printf "${B}  ║${R}    ${DIM}On first launch: ~120 MB downloaded from              ${B}║${R}\n"
-printf "${B}  ║${R}    ${DIM}boosteroid.com. Restart Steam to see it in Game Mode. ${B}║${R}\n"
+printf "${B}  ║${R}    ${DIM}boosteroid.com.                                        ${B}║${R}\n"
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
 printf "${P}  ╚══════════════════════════════════════════════════════════╝${R}\n"
 printf "\n"

@@ -16,6 +16,8 @@ finish-args:
   - --socket=pulseaudio
   # Full device access: GPU (VA-API/VDPAU), gamepads, headsets (/dev/input/*)
   - --device=all
+  # Raw ICMP sockets for network test (Net::Pinger requires CAP_NET_RAW)
+  - --cap-add=NET_RAW
   # Steam shortcuts.vdf — native Steam install
   - --filesystem=~/.local/share/Steam:rw
   - --filesystem=~/.steam:rw

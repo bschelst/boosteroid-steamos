@@ -31,21 +31,21 @@ if grep -q "0x1002" /sys/class/drm/renderD128/device/vendor 2>/dev/null; then
     DECODE_FLAG="-vaapi"
 fi
 
-# ── Google login in Game Mode ────────────────────────────────────────────────
-# Gamescope (Steam Deck Game Mode) has no standalone browser, but Steam itself
-# is registered as the HTTP handler in the Gamescope session.
-# We inject an xdg-open wrapper that calls flatpak-spawn --host so OAuth URLs
-# are forwarded to the HOST's xdg-open → Steam's built-in browser opens.
-if [ -n "${GAMESCOPE_WAYLAND_DISPLAY:-}" ]; then
-    _OVERRIDE_BIN="${XDG_RUNTIME_DIR}/boosteroid-bin"
-    mkdir -p "${_OVERRIDE_BIN}"
-    cat > "${_OVERRIDE_BIN}/xdg-open" << 'EOF'
+# ── Google login (xdg-open via host) ────────────────────────────────────────
+# In Desktop Mode the Flatpak portal handles xdg-open fine.
+# In Game Mode, GAMESCOPE_WAYLAND_DISPLAY is often not forwarded into the
+# sandbox, so a conditional guard is unreliable. We always inject a wrapper
+# that uses flatpak-spawn --host so OAuth URLs escape the sandbox and reach
+# the host's xdg-open — which in SteamOS routes http/https to Steam's
+# built-in browser in both modes.
+_OVERRIDE_BIN="${XDG_RUNTIME_DIR}/boosteroid-bin"
+mkdir -p "${_OVERRIDE_BIN}"
+cat > "${_OVERRIDE_BIN}/xdg-open" << 'EOF'
 #!/bin/bash
-flatpak-spawn --host xdg-open "$@" 2>/dev/null || true
+exec flatpak-spawn --host xdg-open "$@"
 EOF
-    chmod +x "${_OVERRIDE_BIN}/xdg-open"
-    export PATH="${_OVERRIDE_BIN}:${PATH}"
-fi
+chmod +x "${_OVERRIDE_BIN}/xdg-open"
+export PATH="${_OVERRIDE_BIN}:${PATH}"
 
 # ── Launch ───────────────────────────────────────────────────────────────────
 # Add Boosteroid's bundled libraries to the search path.

@@ -58,7 +58,12 @@ def main():
             print("Boosteroid shortcut already present in Steam library.")
             return
 
-    index = str(len(shortcuts))
+    # Find the next unused numeric index (Steam may use sparse non-sequential keys)
+    used = set(shortcuts.keys())
+    idx = 0
+    while str(idx) in used:
+        idx += 1
+    index = str(idx)
     shortcuts[index] = vdf.VDFDict(
         {
             "AppName": APP_NAME,

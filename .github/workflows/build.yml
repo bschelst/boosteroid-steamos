@@ -41,7 +41,10 @@ jobs:
             org.freedesktop.Sdk//24.08
 
       - name: Build Flatpak
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
+          printf '%s\n' "$REF_NAME" > version.txt
           flatpak-builder \
             --user \
             --install-deps-from=flathub \
@@ -51,13 +54,10 @@ jobs:
             org.schelstraete.boosteroid.yml
 
       - name: Bundle Flatpak
-        env:
-          REF_NAME: ${{ github.ref_name }}
         run: |
           flatpak build-bundle repo \
             org.schelstraete.boosteroid.flatpak \
-            org.schelstraete.boosteroid \
-            --subject="$REF_NAME"
+            org.schelstraete.boosteroid
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

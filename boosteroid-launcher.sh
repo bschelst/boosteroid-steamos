@@ -8,7 +8,8 @@ set -euo pipefail
 # ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
 LOG=/tmp/boosteroid.log
 exec > >(tee -a "$LOG") 2>&1
-echo "=== Boosteroid launch $(date) ==="
+VERSION=$(cat /app/share/boosteroid/version 2>/dev/null || echo "unknown")
+echo "=== Boosteroid $VERSION launch $(date) ==="
 echo "DISPLAY=${DISPLAY:-<unset>}  WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-<unset>}"
 echo "GAMESCOPE_WAYLAND_DISPLAY=${GAMESCOPE_WAYLAND_DISPLAY:-<unset>}"
 echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}"

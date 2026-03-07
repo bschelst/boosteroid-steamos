@@ -43,6 +43,7 @@ modules:
     buildsystem: simple
     build-commands:
       - gcc src/force_fullscreen.c -lX11 -o /app/bin/boosteroid-fullscreen
+      - install -Dm644 version.txt /app/share/boosteroid/version
       - install -Dm755 boosteroid-launcher.sh /app/bin/boosteroid-launcher.sh
       - install -Dm755 src/install_boosteroid.py /app/lib/boosteroid/install_boosteroid.py
       - install -Dm755 src/add-to-steam.py /app/lib/boosteroid/add-to-steam.py

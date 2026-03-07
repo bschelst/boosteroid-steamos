@@ -444,7 +444,7 @@
 				}
 				"disabled_activators"		{}
 			}
-			"button_back_right_lower"
+			"button_back_right"
 			{
 				"activators"
 				{
@@ -789,7 +789,7 @@
 				}
 				"disabled_activators"		{}
 			}
-			"button_back_right_lower"
+			"button_back_right"
 			{
 				"activators"
 				{

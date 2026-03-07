@@ -81,7 +81,7 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, _user_data)
         )
 
 
-def on_bus_acquired(conn, name, _user_data):
+def on_bus_acquired(conn, name, *_args):
     node_info = Gio.DBusNodeInfo.new_for_xml(PORTAL_XML)
     conn.register_object(
         "/org/freedesktop/portal/desktop",
@@ -93,11 +93,11 @@ def on_bus_acquired(conn, name, _user_data):
     log("portal service registered on bus")
 
 
-def on_name_acquired(_conn, name, _user_data):
+def on_name_acquired(_conn, name, *_args):
     log(f"portal name acquired: {name} — Google login intercept active")
 
 
-def on_name_lost(_conn, name, _user_data):
+def on_name_lost(_conn, name, *_args):
     log(f"portal name lost/denied: {name} — intercept disabled")
     sys.exit(0)
 

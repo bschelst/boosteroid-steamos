@@ -5,9 +5,11 @@ Reads and writes $STEAM_ROOT/userdata/<uid>/config/shortcuts.vdf
 using binary VDF format. Idempotent — safe to run multiple times.
 """
 
+import binascii
 import glob
 import os
 import shutil
+import struct
 import sys
 
 # vdf.py is installed alongside this script at /app/lib/boosteroid/
@@ -15,8 +17,16 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vdf  # noqa: E402  (vendored)
 
 APP_NAME = "Boosteroid SteamOS"
-FLATPAK_EXE  = "flatpak"
+# Full path required: Steam deletes shortcuts whose Exe is not an absolute path.
+FLATPAK_EXE  = "/usr/bin/flatpak"
 FLATPAK_ARGS = "run org.schelstraete.boosteroid"
+
+# Compute the Steam shortcut artwork ID from exe+name (crc32 | 0x80000000).
+# We write this into shortcuts.vdf so Steam uses exactly our value, which lets
+# us install grid artwork under a known filename.
+_APPID_UNSIGNED = (binascii.crc32((FLATPAK_EXE + APP_NAME).encode()) & 0xFFFFFFFF) | 0x80000000
+# VDF binary format stores int32 as signed; convert for struct.pack compatibility.
+_APPID_SIGNED = struct.unpack("<i", struct.pack("<I", _APPID_UNSIGNED))[0]
 
 # /app/share is only visible inside the sandbox; Steam runs outside it.
 # We copy the icon to the user's XDG icon theme so Steam can find it.
@@ -69,35 +79,24 @@ def find_shortcuts_vdf():
 
 _GRID_SRC = "/app/share/boosteroid/grid"
 
-# Steam calculates the non-Steam shortcut artwork ID from exe+appname, but the
-# exact formula varies (with/without quotes around exe).  Install artwork for
-# all plausible IDs so Steam finds it regardless of which formula it uses.
-def _all_possible_ids(exe, appname):
-    import binascii
-    candidates = [
-        exe + appname,
-        f'"{exe}"' + appname,
-    ]
-    return [binascii.crc32(k.encode()) & 0xFFFFFFFF | 0x80000000 for k in candidates]
-
 
 def _install_grid_images(shortcuts_vdf_path):
-    """Copy Steam library artwork for all possible shortcut IDs."""
+    """Copy Steam library artwork using the single known shortcut app ID."""
     grid_dst = os.path.join(os.path.dirname(shortcuts_vdf_path), "grid")
     os.makedirs(grid_dst, exist_ok=True)
-    for app_id in _all_possible_ids(FLATPAK_EXE, APP_NAME):
-        mappings = {
-            "hero.png":    f"{app_id}_hero.png",
-            "capsule.png": f"{app_id}p.png",
-            "wide.png":    f"{app_id}.png",
-            "logo.png":    f"{app_id}_logo.png",
-        }
-        for src_name, dst_name in mappings.items():
-            src = os.path.join(_GRID_SRC, src_name)
-            dst = os.path.join(grid_dst, dst_name)
-            if os.path.isfile(src):
-                shutil.copy2(src, dst)
-                print(f"Grid image installed: {dst_name}")
+    app_id = _APPID_UNSIGNED
+    mappings = {
+        "hero.png":    f"{app_id}_hero.png",
+        "capsule.png": f"{app_id}p.png",
+        "wide.png":    f"{app_id}.png",
+        "logo.png":    f"{app_id}_logo.png",
+    }
+    for src_name, dst_name in mappings.items():
+        src = os.path.join(_GRID_SRC, src_name)
+        dst = os.path.join(grid_dst, dst_name)
+        if os.path.isfile(src):
+            shutil.copy2(src, dst)
+            print(f"Grid image installed: {dst_name}")
 
 
 def main():
@@ -120,7 +119,8 @@ def main():
 
     shortcuts = data.setdefault("shortcuts", vdf.VDFDict())
 
-    # Remove any stale entries (wrong Exe from previous installs) and re-add cleanly
+    # Remove any stale entries (wrong Exe from previous installs) and re-add cleanly.
+    # Also covers the old bare "flatpak" exe that Steam removes on restart.
     stale_keys = [
         k for k, e in shortcuts.items()
         if e.get("AppName") == APP_NAME and e.get("Exe") != FLATPAK_EXE
@@ -129,22 +129,24 @@ def main():
         print(f"Removing stale shortcut entry (wrong Exe): {shortcuts[k].get('Exe')!r}")
         del shortcuts[k]
 
-    # Idempotency: only write shortcuts.vdf if the entry is missing or wrong.
-    # Grid images are always (re-)installed regardless, so artwork repairs itself.
-    already_correct = any(
-        e.get("AppName") == APP_NAME and e.get("Exe") == FLATPAK_EXE
-        for e in shortcuts.values()
+    # Idempotency: only write shortcuts.vdf if the entry is missing or the appid
+    # field needs to be added.  Grid images are always (re-)installed.
+    correct_entry = next(
+        (e for e in shortcuts.values()
+         if e.get("AppName") == APP_NAME and e.get("Exe") == FLATPAK_EXE),
+        None,
     )
 
-    if not already_correct:
-        # Find the next unused numeric index
+    needs_write = False
+    if correct_entry is None:
+        # Create new entry with an explicit appid so Steam uses our known value.
         used = set(shortcuts.keys())
         idx = 0
         while str(idx) in used:
             idx += 1
-        index = str(idx)
-        shortcuts[index] = vdf.VDFDict(
+        shortcuts[str(idx)] = vdf.VDFDict(
             {
+                "appid": _APPID_SIGNED,
                 "AppName": APP_NAME,
                 "Exe": FLATPAK_EXE,
                 "StartDir": os.path.expanduser("~"),
@@ -161,15 +163,21 @@ def main():
                 "tags": vdf.VDFDict(),
             }
         )
+        needs_write = True
+        print(f"Added '{APP_NAME}' to Steam library ({path}) — appid={_APPID_UNSIGNED}")
+        print("Restart Steam to see it in your library.")
+    elif correct_entry.get("appid") != _APPID_SIGNED:
+        # Backfill missing or stale appid so grid artwork is found.
+        correct_entry["appid"] = _APPID_SIGNED
+        needs_write = True
+        print(f"Updated appid on existing entry to {_APPID_UNSIGNED}")
+    else:
+        print("Boosteroid shortcut already present and correct.")
 
+    if needs_write:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
             vdf.binary_dump(data, f)
-
-        print(f"Added '{APP_NAME}' to Steam library ({path})")
-        print("Restart Steam to see it in your library.")
-    else:
-        print("Boosteroid shortcut already present and correct.")
 
     # Always install grid images — repairs missing artwork on every launch
     _install_grid_images(path)

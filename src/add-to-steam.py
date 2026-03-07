@@ -68,26 +68,36 @@ def find_shortcuts_vdf():
 
 
 _GRID_SRC = "/app/share/boosteroid/grid"
-# Steam non-Steam shortcut app ID = CRC32("flatpakBoosteroid SteamOS") | 0x80000000
-_STEAM_APP_ID = 3819927894
-_GRID_FILES = {
-    "hero.png":    f"{_STEAM_APP_ID}_hero.png",   # hero banner (1920×620)
-    "capsule.png": f"{_STEAM_APP_ID}p.png",        # portrait capsule (600×900)
-    "wide.png":    f"{_STEAM_APP_ID}.png",          # landscape grid (920×430)
-    "logo.png":    f"{_STEAM_APP_ID}_logo.png",    # logo overlay (880×280)
-}
+
+# Steam calculates the non-Steam shortcut artwork ID from exe+appname, but the
+# exact formula varies (with/without quotes around exe).  Install artwork for
+# all plausible IDs so Steam finds it regardless of which formula it uses.
+def _all_possible_ids(exe, appname):
+    import binascii
+    candidates = [
+        exe + appname,
+        f'"{exe}"' + appname,
+    ]
+    return [binascii.crc32(k.encode()) & 0xFFFFFFFF | 0x80000000 for k in candidates]
 
 
 def _install_grid_images(shortcuts_vdf_path):
-    """Copy Steam library artwork into the grid folder next to shortcuts.vdf."""
+    """Copy Steam library artwork for all possible shortcut IDs."""
     grid_dst = os.path.join(os.path.dirname(shortcuts_vdf_path), "grid")
     os.makedirs(grid_dst, exist_ok=True)
-    for src_name, dst_name in _GRID_FILES.items():
-        src = os.path.join(_GRID_SRC, src_name)
-        dst = os.path.join(grid_dst, dst_name)
-        if os.path.isfile(src):
-            shutil.copy2(src, dst)
-            print(f"Grid image installed: {dst_name}")
+    for app_id in _all_possible_ids(FLATPAK_EXE, APP_NAME):
+        mappings = {
+            "hero.png":    f"{app_id}_hero.png",
+            "capsule.png": f"{app_id}p.png",
+            "wide.png":    f"{app_id}.png",
+            "logo.png":    f"{app_id}_logo.png",
+        }
+        for src_name, dst_name in mappings.items():
+            src = os.path.join(_GRID_SRC, src_name)
+            dst = os.path.join(grid_dst, dst_name)
+            if os.path.isfile(src):
+                shutil.copy2(src, dst)
+                print(f"Grid image installed: {dst_name}")
 
 
 def main():

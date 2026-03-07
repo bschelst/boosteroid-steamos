@@ -43,19 +43,31 @@ if grep -q "0x1002" /sys/class/drm/renderD128/device/vendor 2>/dev/null; then
 fi
 
 # ── Google login (xdg-open via host) ────────────────────────────────────────
-# In Desktop Mode the Flatpak portal handles xdg-open fine.
-# In Game Mode, GAMESCOPE_WAYLAND_DISPLAY is often not forwarded into the
-# sandbox, so a conditional guard is unreliable. We always inject a wrapper
-# that uses flatpak-spawn --host so OAuth URLs escape the sandbox and reach
-# the host's xdg-open — which in SteamOS routes http/https to Steam's
-# built-in browser in both modes.
+# In Game Mode (Gamescope) there is no traditional desktop environment, so the
+# Flatpak portal and host xdg-open may not work reliably.  The most reliable
+# approach is to use Steam's built-in browser via the steam://openurl/ protocol.
+# Steam is always running in Game Mode and its overlay browser can follow the
+# loopback OAuth redirect (http://localhost:PORT/callback) because the Flatpak
+# sandbox shares the host network namespace (--share=network).
+# Fallback: host xdg-open works in Desktop Mode where a normal browser is running.
 _OVERRIDE_BIN="${XDG_RUNTIME_DIR}/boosteroid-bin"
 mkdir -p "${_OVERRIDE_BIN}"
 cat > "${_OVERRIDE_BIN}/xdg-open" << 'EOF'
 #!/bin/bash
-echo "[xdg-open] called with: $*" >> /tmp/boosteroid.log
-flatpak-spawn --host xdg-open "$@"
-echo "[xdg-open] flatpak-spawn exit=$?" >> /tmp/boosteroid.log
+URL="$1"
+echo "[xdg-open] called with: $URL" >> /tmp/boosteroid.log
+
+# Method 1: Steam overlay browser — works in Game Mode and Desktop Mode on SteamOS.
+# Tells the already-running Steam process to open the URL in its built-in browser.
+if flatpak-spawn --host steam "steam://openurl/$URL" >> /tmp/boosteroid.log 2>&1; then
+    echo "[xdg-open] steam://openurl OK" >> /tmp/boosteroid.log
+    exit 0
+fi
+echo "[xdg-open] steam://openurl failed, trying host xdg-open" >> /tmp/boosteroid.log
+
+# Method 2: host xdg-open — fallback for Desktop Mode if Steam isn't in PATH.
+flatpak-spawn --host xdg-open "$URL" >> /tmp/boosteroid.log 2>&1
+echo "[xdg-open] xdg-open exit=$?" >> /tmp/boosteroid.log
 EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"

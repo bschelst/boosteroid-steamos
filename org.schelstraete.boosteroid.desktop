@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=Boosteroid
+Name=Boosteroid (unofficial)
 GenericName=Cloud Gaming
 Comment=Stream PC games from the cloud with Boosteroid
 Exec=boosteroid-launcher.sh

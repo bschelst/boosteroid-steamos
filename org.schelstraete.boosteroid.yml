@@ -26,6 +26,8 @@ finish-args:
   # flatpak-spawn --host: lets the xdg-open wrapper route OAuth URLs through
   # the host system (Steam's browser in Game Mode) for Google login support
   - --talk-name=org.freedesktop.Flatpak
+  # Share host /tmp so /tmp/boosteroid.log is readable from outside the sandbox
+  - --filesystem=/tmp
   # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
   - --env=LD_PRELOAD=
 

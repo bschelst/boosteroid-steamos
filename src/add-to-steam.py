@@ -68,12 +68,13 @@ def find_shortcuts_vdf():
 
 
 _GRID_SRC = "/app/share/boosteroid/grid"
-# Steam non-Steam shortcut app ID = CRC32("flatpakBoosteroid") | 0x80000000
+# Steam non-Steam shortcut app ID = CRC32("flatpakBoosteroid SteamOS") | 0x80000000
 _STEAM_APP_ID = 3819927894
 _GRID_FILES = {
-    "hero.png":    f"{_STEAM_APP_ID}_hero.png",
-    "capsule.png": f"{_STEAM_APP_ID}p.png",
-    "logo.png":    f"{_STEAM_APP_ID}_logo.png",
+    "hero.png":    f"{_STEAM_APP_ID}_hero.png",   # hero banner (1920×620)
+    "capsule.png": f"{_STEAM_APP_ID}p.png",        # portrait capsule (600×900)
+    "wide.png":    f"{_STEAM_APP_ID}.png",          # landscape grid (920×430)
+    "logo.png":    f"{_STEAM_APP_ID}_logo.png",    # logo overlay (880×280)
 }
 
 
@@ -118,44 +119,50 @@ def main():
         print(f"Removing stale shortcut entry (wrong Exe): {shortcuts[k].get('Exe')!r}")
         del shortcuts[k]
 
-    # Idempotency: skip if already correct
-    for entry in shortcuts.values():
-        if entry.get("AppName") == APP_NAME and entry.get("Exe") == FLATPAK_EXE:
-            print("Boosteroid shortcut already present and correct.")
-            return
-
-    # Find the next unused numeric index
-    used = set(shortcuts.keys())
-    idx = 0
-    while str(idx) in used:
-        idx += 1
-    index = str(idx)
-    shortcuts[index] = vdf.VDFDict(
-        {
-            "AppName": APP_NAME,
-            "Exe": FLATPAK_EXE,
-            "StartDir": os.path.expanduser("~"),
-            "icon": ICON_PATH,
-            "ShortcutPath": "",
-            "LaunchOptions": FLATPAK_ARGS,
-            "IsHidden": 0,
-            "AllowDesktopConfig": 1,
-            "AllowOverlay": 1,
-            "OpenVR": 0,
-            "Devkit": 0,
-            "DevkitGameID": "",
-            "LastPlayTime": 0,
-            "tags": vdf.VDFDict(),
-        }
+    # Idempotency: only write shortcuts.vdf if the entry is missing or wrong.
+    # Grid images are always (re-)installed regardless, so artwork repairs itself.
+    already_correct = any(
+        e.get("AppName") == APP_NAME and e.get("Exe") == FLATPAK_EXE
+        for e in shortcuts.values()
     )
 
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "wb") as f:
-        vdf.binary_dump(data, f)
+    if not already_correct:
+        # Find the next unused numeric index
+        used = set(shortcuts.keys())
+        idx = 0
+        while str(idx) in used:
+            idx += 1
+        index = str(idx)
+        shortcuts[index] = vdf.VDFDict(
+            {
+                "AppName": APP_NAME,
+                "Exe": FLATPAK_EXE,
+                "StartDir": os.path.expanduser("~"),
+                "icon": ICON_PATH,
+                "ShortcutPath": "",
+                "LaunchOptions": FLATPAK_ARGS,
+                "IsHidden": 0,
+                "AllowDesktopConfig": 1,
+                "AllowOverlay": 1,
+                "OpenVR": 0,
+                "Devkit": 0,
+                "DevkitGameID": "",
+                "LastPlayTime": 0,
+                "tags": vdf.VDFDict(),
+            }
+        )
 
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            vdf.binary_dump(data, f)
+
+        print(f"Added '{APP_NAME}' to Steam library ({path})")
+        print("Restart Steam to see it in your library.")
+    else:
+        print("Boosteroid shortcut already present and correct.")
+
+    # Always install grid images — repairs missing artwork on every launch
     _install_grid_images(path)
-    print(f"Added '{APP_NAME}' to Steam library ({path})")
-    print("Restart Steam to see it in your library.")
 
 
 if __name__ == "__main__":

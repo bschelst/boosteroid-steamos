@@ -53,6 +53,7 @@ modules:
       - install -Dm644 org.schelstraete.boosteroid.metainfo.xml /app/share/metainfo/org.schelstraete.boosteroid.metainfo.xml
       - install -Dm644 src/steam-hero.png    /app/share/boosteroid/grid/hero.png
       - install -Dm644 src/steam-capsule.png /app/share/boosteroid/grid/capsule.png
+      - install -Dm644 src/steam-wide.png    /app/share/boosteroid/grid/wide.png
       - install -Dm644 src/steam-logo.png    /app/share/boosteroid/grid/logo.png
     sources:
       - type: dir

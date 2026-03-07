@@ -117,11 +117,16 @@ A Steam Input layout is installed automatically on first launch. It has two mode
 
 ### Gamepad mode
 
-Press **L4 or R4** (the back grip buttons) to toggle full xinput gamepad passthrough — all buttons, sticks and triggers are passed straight through to the game.
+Full xinput gamepad passthrough — all buttons, sticks and triggers are passed straight through to the game.
 
-Press **L4 or R4** again to switch back to Mouse + Keyboard mode.
+### Switching modes
 
-> **Tip:** The layout is installed only once. You can customise it afterwards via **Steam → Controller Settings** for the Boosteroid shortcut without it being overwritten on the next launch.
+| Input | Action |
+|---|---|
+| **L5 or R5** (upper grip buttons) | Switch between Mouse+Keyboard ↔ Gamepad |
+| **R4** (lower right grip) | Ctrl+F2 (Boosteroid layout shortcut, active during streaming) |
+
+> **Note:** The layout is overwritten on every launch to keep it up to date.
 
 ---
 

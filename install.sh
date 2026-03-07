@@ -65,5 +65,5 @@ printf "${B}  ║${R}                                                          $
 printf "${P}  ╚══════════════════════════════════════════════════════════╝${R}\n"
 printf "\n"
 
-read -r -p "  Press Enter or A (controller) to close..."
+read -r -t 15 -p "  Press Enter to close (auto-closes in 15s)..." || true
 printf "\n"

@@ -3,11 +3,11 @@
 	"version"		"3"
 	"revision"		"1"
 	"title"		"Boosteroid"
-	"description"		"Default: Mouse+Keyboard. Press touchpad to toggle Gamepad mode."
+	"description"		"Default: Mouse+Keyboard. Tap touchpad=Enter, double-tap or L1/R1 grips to toggle Gamepad."
 	"creator"		""
 	"progenitor"		""
 	"url"		""
-	"export_type"		"personal_local"
+	"export_type"		"unknown"
 	"controller_type"		"controller_ps5"
 	"major_revision"		"0"
 	"minor_revision"		"0"
@@ -35,11 +35,12 @@
 		"english"
 		{
 			"title"		"Boosteroid"
-			"description"		"Default: Mouse+Keyboard. Press touchpad to toggle Gamepad mode."
+			"description"		"Default: Mouse+Keyboard. Tap touchpad=Enter, double-tap or L1/R1 grips to toggle Gamepad."
 			"Default"		"Mouse + Keyboard"
 			"Gamepad"		"Gamepad"
 		}
 	}
+
 	"group"
 	{
 		"id"		"0"
@@ -356,7 +357,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 2 0 0, , "
 						}
 					}
 				}
@@ -370,7 +371,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 2 0 0, , "
 						}
 					}
 				}
@@ -386,15 +387,36 @@
 		"description"		""
 		"inputs"
 		{
-			"click"
+			"touch"
 			{
 				"activators"
 				{
+					"Short_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press RETURN, , "
+						}
+					}
 					"Double_Press"
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 2 0 0, , "
+						}
+					}
+				}
+				"disabled_activators"		{}
+			}
+			"click"
+			{
+				"activators"
+				{
+					"Soft_Press"
+					{
+						"bindings"
+						{
+							"binding"		"mouse_button LEFT, , "
 						}
 					}
 				}
@@ -728,7 +750,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
 						}
 					}
 				}
@@ -742,7 +764,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
 						}
 					}
 				}
@@ -762,7 +784,7 @@
 		"description"		""
 		"inputs"
 		{
-			"click"
+			"touch"
 			{
 				"activators"
 				{
@@ -770,7 +792,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
 						}
 					}
 				}

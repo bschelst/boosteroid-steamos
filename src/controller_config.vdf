@@ -130,7 +130,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 2 0 0, , "
 						}
 					}
 				}
@@ -168,7 +168,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
 						}
 					}
 				}
@@ -430,7 +430,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 2 0 0, , "
 						}
 					}
 				}
@@ -444,7 +444,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 2 0 0, , "
 						}
 					}
 				}
@@ -778,7 +778,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
 						}
 					}
 				}
@@ -792,7 +792,7 @@
 					{
 						"bindings"
 						{
-							"binding"		"controller_action toggle_layer 2 1 1, , "
+							"binding"		"controller_action CHANGE_PRESET 1 0 0, , "
 						}
 					}
 				}

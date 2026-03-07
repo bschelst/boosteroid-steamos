@@ -14,8 +14,8 @@ finish-args:
   - --socket=wayland
   # Audio via PulseAudio / PipeWire compatibility layer
   - --socket=pulseaudio
-  # GPU access for hardware video decoding (VA-API / VDPAU)
-  - --device=dri
+  # Full device access: GPU (VA-API/VDPAU), gamepads, headsets (/dev/input/*)
+  - --device=all
   # Steam shortcuts.vdf — native Steam install
   - --filesystem=~/.local/share/Steam:rw
   - --filesystem=~/.steam:rw

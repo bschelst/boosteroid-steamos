@@ -51,10 +51,13 @@ jobs:
             org.schelstraete.boosteroid.yml
 
       - name: Bundle Flatpak
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
           flatpak build-bundle repo \
             org.schelstraete.boosteroid.flatpak \
-            org.schelstraete.boosteroid
+            org.schelstraete.boosteroid \
+            --subject="$REF_NAME"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

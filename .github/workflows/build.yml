@@ -1,0 +1,71 @@
+name: Build Flatpak
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flatpak tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y flatpak flatpak-builder
+
+      - name: Add Flathub remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Cache Flatpak runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/flatpak
+          key: flatpak-${{ runner.os }}-24.08-${{ hashFiles('org.schelstraete.boosteroid.yml') }}
+          restore-keys: |
+            flatpak-${{ runner.os }}-24.08-
+
+      - name: Install runtime and SDK
+        run: |
+          flatpak install --user -y flathub \
+            org.freedesktop.Platform//24.08 \
+            org.freedesktop.Sdk//24.08
+
+      - name: Build Flatpak
+        run: |
+          flatpak-builder \
+            --user \
+            --install-deps-from=flathub \
+            --force-clean \
+            --repo=repo \
+            build-dir \
+            org.schelstraete.boosteroid.yml
+
+      - name: Bundle Flatpak
+        run: |
+          flatpak build-bundle repo \
+            org.schelstraete.boosteroid.flatpak \
+            org.schelstraete.boosteroid
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boosteroid-flatpak
+          path: org.schelstraete.boosteroid.flatpak
+          retention-days: 7
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: org.schelstraete.boosteroid.flatpak
+          generate_release_notes: true

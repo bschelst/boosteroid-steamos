@@ -24,11 +24,13 @@ LIB_DIR="${INSTALL_DIR}/opt/BoosteroidGamesS.R.L./lib"
 if [ ! -f "${BINARY}" ]; then
     echo "==> First launch: downloading Boosteroid..."
     python3 /app/lib/boosteroid/install_boosteroid.py
-
-    echo "==> Adding Boosteroid to your Steam library..."
-    python3 /app/lib/boosteroid/add-to-steam.py \
-        || echo "Warning: could not add Steam shortcut (is Steam installed?)"
 fi
+
+# Always ensure the Steam shortcut exists (idempotent — skips if already present).
+# Runs on every launch so reinstalling the flatpak re-adds the shortcut if needed.
+echo "==> Ensuring Steam shortcut..."
+python3 /app/lib/boosteroid/add-to-steam.py \
+    || echo "Warning: could not add Steam shortcut (is Steam installed?)"
 
 # ── AMD GPU optimisation ─────────────────────────────────────────────────────
 # Detect AMD GPU via PCI vendor ID (0x1002 = AMD/ATI).

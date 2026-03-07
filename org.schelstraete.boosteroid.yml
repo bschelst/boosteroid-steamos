@@ -23,6 +23,9 @@ finish-args:
   - --filesystem=~/.var/app/com.valvesoftware.Steam:rw
   # User icon theme — so Steam can load the shortcut icon outside the sandbox
   - --filesystem=~/.local/share/icons:create
+  # flatpak-spawn --host: lets the xdg-open wrapper route OAuth URLs through
+  # the host system (Steam's browser in Game Mode) for Google login support
+  - --talk-name=org.freedesktop.Flatpak
   # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
   - --env=LD_PRELOAD=
 

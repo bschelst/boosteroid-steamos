@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vdf  # noqa: E402  (vendored)
 
-APP_NAME = "Boosteroid"
+APP_NAME = "Boosteroid SteamOS"
 FLATPAK_EXE  = "flatpak"
 FLATPAK_ARGS = "run org.schelstraete.boosteroid"
 
@@ -65,6 +65,28 @@ def find_shortcuts_vdf():
             return path
 
     return None
+
+
+_GRID_SRC = "/app/share/boosteroid/grid"
+# Steam non-Steam shortcut app ID = CRC32("flatpakBoosteroid") | 0x80000000
+_STEAM_APP_ID = 3819927894
+_GRID_FILES = {
+    "hero.png":    f"{_STEAM_APP_ID}_hero.png",
+    "capsule.png": f"{_STEAM_APP_ID}p.png",
+    "logo.png":    f"{_STEAM_APP_ID}_logo.png",
+}
+
+
+def _install_grid_images(shortcuts_vdf_path):
+    """Copy Steam library artwork into the grid folder next to shortcuts.vdf."""
+    grid_dst = os.path.join(os.path.dirname(shortcuts_vdf_path), "grid")
+    os.makedirs(grid_dst, exist_ok=True)
+    for src_name, dst_name in _GRID_FILES.items():
+        src = os.path.join(_GRID_SRC, src_name)
+        dst = os.path.join(grid_dst, dst_name)
+        if os.path.isfile(src):
+            shutil.copy2(src, dst)
+            print(f"Grid image installed: {dst_name}")
 
 
 def main():
@@ -131,6 +153,7 @@ def main():
     with open(path, "wb") as f:
         vdf.binary_dump(data, f)
 
+    _install_grid_images(path)
     print(f"Added '{APP_NAME}' to Steam library ({path})")
     print("Restart Steam to see it in your library.")
 

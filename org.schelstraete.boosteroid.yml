@@ -51,6 +51,9 @@ modules:
       - install -Dm644 org.schelstraete.boosteroid.desktop /app/share/applications/org.schelstraete.boosteroid.desktop
       - install -Dm644 org.schelstraete.boosteroid.svg /app/share/icons/hicolor/scalable/apps/org.schelstraete.boosteroid.svg
       - install -Dm644 org.schelstraete.boosteroid.metainfo.xml /app/share/metainfo/org.schelstraete.boosteroid.metainfo.xml
+      - install -Dm644 src/steam-hero.png    /app/share/boosteroid/grid/hero.png
+      - install -Dm644 src/steam-capsule.png /app/share/boosteroid/grid/capsule.png
+      - install -Dm644 src/steam-logo.png    /app/share/boosteroid/grid/logo.png
     sources:
       - type: dir
         path: .

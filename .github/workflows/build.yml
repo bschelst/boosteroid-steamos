@@ -45,6 +45,9 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           printf '%s\n' "$REF_NAME" > version.txt
+          VERSION="${REF_NAME#v}"
+          DATE="$(date +%Y-%m-%d)"
+          sed -i "s/FLATPAK_VERSION/$VERSION/; s/FLATPAK_DATE/$DATE/" org.schelstraete.boosteroid.metainfo.xml
           flatpak-builder \
             --user \
             --install-deps-from=flathub \

@@ -15,10 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import vdf  # noqa: E402  (vendored)
 
 APP_NAME = "Boosteroid"
-# Split exe + args so Steam can execute it correctly on Linux.
-# Using the full path avoids PATH lookup issues when Steam launches the shortcut.
-FLATPAK_EXE  = "/usr/bin/flatpak"
-FLATPAK_ARGS = "run org.schelstraete.boosteroid"
+# Use bash -c so Steam doesn't need flatpak in its PATH.
+FLATPAK_EXE  = "/bin/bash"
+FLATPAK_ARGS = "-c 'flatpak run org.schelstraete.boosteroid'"
 
 # /app/share is only visible inside the sandbox; Steam runs outside it.
 # We copy the icon to the user's XDG icon theme so Steam can find it.

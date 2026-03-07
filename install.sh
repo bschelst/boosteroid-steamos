@@ -52,10 +52,21 @@ step "Installing (this may take a minute on first run)..."
 flatpak install --user -y "$TMP_FLATPAK"
 ok "Flatpak installed"
 
+# Steam must NOT be running when we write shortcuts.vdf — if it is, it will
+# overwrite the file with its in-memory copy when it closes, erasing our entry.
+step "Stopping Steam so the library update is not overwritten..."
+steam -shutdown 2>/dev/null || true
+# Wait up to 8 s for Steam to actually exit
+for i in $(seq 1 8); do
+    pgrep -x steam >/dev/null 2>&1 || break
+    sleep 1
+done
+ok "Steam stopped"
+
 step "Adding Boosteroid to your Steam library..."
 flatpak run --command=python3 org.schelstraete.boosteroid \
     /app/lib/boosteroid/add-to-steam.py \
-    && ok "Steam shortcut added — restart Steam to see it" \
+    && ok "Steam shortcut added" \
     || printf "${Y}  !   Could not add Steam shortcut automatically.\n${R}      Add manually: flatpak run org.schelstraete.boosteroid\n"
 
 printf "\n"
@@ -63,7 +74,7 @@ printf "${B}  ╔═════════════════════
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
 printf "${B}  ║${R}    ${G}${BOLD}✓  Done!${R}                                            ${B}║${R}\n"
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
-printf "${B}  ║${R}    ${W}Restart Steam${R} then find Boosteroid in your library.  ${B}║${R}\n"
+printf "${B}  ║${R}    Switch to ${W}Game Mode${R} — Boosteroid is in your library. ${B}║${R}\n"
 printf "${B}  ║${R}                                                          ${B}║${R}\n"
 printf "${B}  ║${R}    ${DIM}On first launch: ~120 MB downloaded from              ${B}║${R}\n"
 printf "${B}  ║${R}    ${DIM}boosteroid.com.                                        ${B}║${R}\n"

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.schelstraete.boosteroid</id>
+  <name>Boosteroid (unofficial)</name>
+  <summary>Cloud gaming client for Steam Deck</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>proprietary</project_license>
+  <url type="homepage">https://github.com/bschelst/boosteroid-steamos</url>
+  <description>
+    <p>
+      Unofficial Flatpak wrapper for the Boosteroid cloud gaming client,
+      optimised for Steam Deck and SteamOS. Installs automatically, adds a
+      Steam library shortcut, and enables hardware-accelerated video decoding.
+    </p>
+  </description>
+  <releases>
+    <release version="FLATPAK_VERSION" date="FLATPAK_DATE"/>
+  </releases>
+  <supports>
+    <control>gamepad</control>
+  </supports>
+  <categories>
+    <category>Game</category>
+  </categories>
+</component>

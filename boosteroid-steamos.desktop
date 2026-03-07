@@ -6,5 +6,5 @@ Exec=bash -c "curl -fsSL -o /tmp/boosteroid-install.sh https://github.com/bschel
 Icon=system-software-install
 Terminal=true
 Type=Application
-Categories=System;
-Keywords=boosteroid;install;cloud;gaming;
+Categories=Game;
+Keywords=boosteroid;schelstraete;cloud;gaming;

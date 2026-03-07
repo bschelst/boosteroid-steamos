@@ -21,6 +21,8 @@ finish-args:
   - --filesystem=~/.steam:rw
   # Steam shortcuts.vdf — Flatpak Steam install
   - --filesystem=~/.var/app/com.valvesoftware.Steam:rw
+  # User icon theme — so Steam can load the shortcut icon outside the sandbox
+  - --filesystem=~/.local/share/icons:create
   # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
   - --env=LD_PRELOAD=
 

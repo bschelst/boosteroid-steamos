@@ -7,6 +7,7 @@ using binary VDF format. Idempotent — safe to run multiple times.
 
 import glob
 import os
+import shutil
 import sys
 
 # vdf.py is installed alongside this script at /app/lib/boosteroid/
@@ -15,7 +16,19 @@ import vdf  # noqa: E402  (vendored)
 
 APP_NAME = "Boosteroid"
 FLATPAK_CMD = "flatpak run org.schelstraete.boosteroid"
-ICON_PATH = "/app/share/icons/hicolor/scalable/apps/org.schelstraete.boosteroid.svg"
+
+# /app/share is only visible inside the sandbox; Steam runs outside it.
+# We copy the icon to the user's XDG icon theme so Steam can find it.
+_SANDBOX_ICON = "/app/share/icons/hicolor/scalable/apps/org.schelstraete.boosteroid.svg"
+_USER_ICON_DIR = os.path.expanduser("~/.local/share/icons/hicolor/scalable/apps")
+ICON_PATH = os.path.join(_USER_ICON_DIR, "org.schelstraete.boosteroid.svg")
+
+
+def _install_icon():
+    if not os.path.isfile(_SANDBOX_ICON):
+        return
+    os.makedirs(_USER_ICON_DIR, exist_ok=True)
+    shutil.copy2(_SANDBOX_ICON, ICON_PATH)
 
 # Steam can live in multiple locations depending on how it is installed
 STEAM_ROOTS = [
@@ -35,6 +48,7 @@ def find_shortcuts_vdf():
 
 
 def main():
+    _install_icon()
     path = find_shortcuts_vdf()
     if not path:
         print(

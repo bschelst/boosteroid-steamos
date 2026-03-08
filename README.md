@@ -27,15 +27,15 @@ This project downloads and runs the **official, unmodified Boosteroid binary** f
 
 ## 🎮 Install on Steam Deck (recommended)
 
-### Step 1 — Switch to Desktop Mode
+### 🖥️ Step 1 — Switch to Desktop Mode
 
 Press **Steam button → Power → Switch to Desktop**.
 
-### Step 2 — Download the installer
+### ⬇️ Step 2 — Download the installer
 
 Click the **Install** button at the top of this page. The file `boosteroid-steamos.desktop` is saved to your **Downloads** folder.
 
-### Step 3 — Run the installer
+### ▶️ Step 3 — Run the installer
 
 Open **Dolphin** (the file manager) and go to your **Downloads** folder.
 
@@ -43,7 +43,7 @@ Right-click `boosteroid-steamos.desktop` → **Allow Launching**, then **double-
 
 A terminal window opens and installs everything automatically.
 
-### Step 4 — Return to Game Mode
+### 🎮 Step 4 — Return to Game Mode
 
 Once the installer finishes, press **Steam → Return to Gaming Mode**.
 

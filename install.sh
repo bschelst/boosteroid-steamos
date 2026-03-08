@@ -54,7 +54,8 @@ ok "Flatpak installed"
 
 step "Adding Boosteroid to your Steam library..."
 flatpak run --command=python3 org.schelstraete.boosteroid \
-    /app/lib/boosteroid/add-to-steam.py \
+    /app/lib/boosteroid/add-to-steam.py 2>&1 \
+    | sed 's/^/      /' \
     && ok "Steam shortcut added" \
     || printf "${Y}  !   Could not add Steam shortcut automatically.\n${R}      Add manually: flatpak run org.schelstraete.boosteroid\n"
 

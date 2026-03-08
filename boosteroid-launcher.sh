@@ -15,6 +15,15 @@ echo "DISPLAY=${DISPLAY:-<unset>}  WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-<unset>}"
 echo "GAMESCOPE_WAYLAND_DISPLAY=${GAMESCOPE_WAYLAND_DISPLAY:-<unset>}"
 echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}"
 
+# ── Splash screen ────────────────────────────────────────────────────────────
+# Show a loading splash early so the user sees something immediately.
+# Requires a display (X11 or Wayland); silently skipped if neither is available.
+SPLASH_PID=""
+if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    python3 /app/lib/boosteroid/splash.py &
+    SPLASH_PID=$!
+fi
+
 XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 INSTALL_DIR="${XDG_DATA_HOME}/boosteroid"
@@ -90,6 +99,12 @@ sleep 0.3   # let the service register before Boosteroid starts
 # ── Launch ───────────────────────────────────────────────────────────────────
 # Add Boosteroid's bundled libraries to the search path.
 export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
+# Dismiss the splash screen now that Boosteroid is ready to start.
+if [ -n "${SPLASH_PID}" ] && kill -0 "${SPLASH_PID}" 2>/dev/null; then
+    kill "${SPLASH_PID}" 2>/dev/null || true
+    wait "${SPLASH_PID}" 2>/dev/null || true
+fi
 
 # shellcheck disable=SC2086
 exec "${BINARY}" ${DECODE_FLAG} "$@"

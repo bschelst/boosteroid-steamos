@@ -49,6 +49,7 @@ modules:
       - gcc src/force_fullscreen.c -lX11 -o /app/bin/boosteroid-fullscreen
       - install -Dm644 version.txt /app/share/boosteroid/version
       - install -Dm755 boosteroid-launcher.sh /app/bin/boosteroid-launcher.sh
+      - install -Dm755 src/splash.py /app/lib/boosteroid/splash.py
       - install -Dm755 src/portal_openuri.py /app/lib/boosteroid/portal_openuri.py
       - install -Dm755 src/install_boosteroid.py /app/lib/boosteroid/install_boosteroid.py
       - install -Dm755 src/add-to-steam.py /app/lib/boosteroid/add-to-steam.py

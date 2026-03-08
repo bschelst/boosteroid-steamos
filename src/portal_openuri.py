@@ -85,31 +85,34 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             path = os.readlink(f"/proc/self/fd/{fd}")
             os.close(fd)
             log(f"OpenFile: {path}")
-            # Prefer org.kde.index (Flathub) — touch-friendly, works in Game Mode.
-            # If not installed, show a kdialog/zenity hint and fall back to
-            # dolphin (KDE/SteamOS) or nautilus (GNOME/Bazzite) for Desktop Mode.
-            r = subprocess.run(
-                ["flatpak-spawn", "--host", "flatpak", "info", "org.kde.index"],
-                capture_output=True,
-            )
-            if r.returncode == 0:
-                log("OpenFile: launching org.kde.index")
-                subprocess.Popen(["flatpak-spawn", "--host", "flatpak", "run", "org.kde.index", path])
-            else:
-                log("OpenFile: org.kde.index not installed, showing install hint")
-                install_hint = (
-                    "To browse clips in Game Mode, install Index from Flathub:\n\n"
-                    "flatpak install flathub org.kde.index"
+            if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY"):
+                # Game Mode: prefer org.kde.index (touch-friendly Flatpak).
+                # If not installed, show a hint via kdialog/zenity.
+                r = subprocess.run(
+                    ["flatpak-spawn", "--host", "flatpak", "info", "org.kde.index"],
+                    capture_output=True,
                 )
+                if r.returncode == 0:
+                    log("OpenFile: Game Mode — launching org.kde.index")
+                    subprocess.Popen(["flatpak-spawn", "--host", "flatpak", "run", "org.kde.index", path])
+                else:
+                    log("OpenFile: Game Mode — org.kde.index not installed, showing install hint")
+                    install_hint = (
+                        "To browse clips in Game Mode, install Index from Flathub:\n\n"
+                        "flatpak install flathub org.kde.index"
+                    )
+                    subprocess.Popen([
+                        "flatpak-spawn", "--host", "bash", "-c",
+                        'kdialog --title "Install Index" --msgbox "$1" 2>/dev/null'
+                        ' || zenity --info --title "Install Index" --text "$1"',
+                        "--", install_hint,
+                    ])
+            else:
+                # Desktop Mode: use the system file manager directly.
+                log("OpenFile: Desktop Mode — opening with dolphin/nautilus")
                 subprocess.Popen([
                     "flatpak-spawn", "--host", "bash", "-c",
-                    'kdialog --title "Install Index" --msgbox "$1" 2>/dev/null'
-                    ' || zenity --info --title "Install Index" --text "$1"',
-                    "--", install_hint,
-                ])
-                subprocess.Popen([
-                    "flatpak-spawn", "--host", "bash", "-c",
-                    'dolphin "$1" 2>/dev/null || nautilus "$1" 2>/dev/null',
+                    'dolphin "$1" 2>/dev/null || nautilus "$1" 2>/dev/null || xdg-open "$1"',
                     "--", path,
                 ])
         except Exception as exc:

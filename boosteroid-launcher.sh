@@ -7,6 +7,10 @@ set -euo pipefail
 
 # ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
 LOG=/tmp/boosteroid.log
+# Truncate log if it exceeds 5 MB
+if [ -f "$LOG" ] && [ "$(stat -c%s "$LOG" 2>/dev/null || echo 0)" -gt 5242880 ]; then
+    > "$LOG"
+fi
 exec > >(tee -a "$LOG") 2>&1
 VERSION=$(cat /app/share/boosteroid/version 2>/dev/null || echo "unknown")
 echo "=== Boosteroid $VERSION launch $(date) ==="

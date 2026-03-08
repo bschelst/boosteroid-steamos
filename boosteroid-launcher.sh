@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# Shared with splash screen for live status updates
+STATUS_FILE="/tmp/.boosteroid_splash_status"
+
 # ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
 LOG=/tmp/boosteroid.log
 > "$LOG"
@@ -82,6 +85,34 @@ EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"
 
+# ── Wait for any previous Boosteroid instance to exit ────────────────────────
+# Boosteroid can take a few seconds to fully shut down after the user quits.
+# Re-launching before it exits can cause the new session to fail.
+# We poll the host process list (via flatpak-spawn) and update the splash.
+_wait_for_boosteroid_close() {
+    local max_attempts=5 wait_secs=4 i=1
+    if ! flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; then
+        return 0
+    fi
+    echo "==> Previous Boosteroid instance still running, waiting..."
+    while flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; do
+        if [ "$i" -gt "$max_attempts" ]; then
+            echo "warn:Previous Boosteroid still running after ${max_attempts} retries — launching anyway" \
+                > "${STATUS_FILE}"
+            echo "==> Warning: still running after ${max_attempts} attempts, launching anyway"
+            return 0
+        fi
+        echo "step:Waiting for previous Boosteroid to close (${i}/${max_attempts})..." \
+            > "${STATUS_FILE}"
+        echo "==> Attempt ${i}/${max_attempts}: still running, retrying in ${wait_secs}s..."
+        sleep "${wait_secs}"
+        i=$((i + 1))
+    done
+    rm -f "${STATUS_FILE}"
+    echo "==> Previous instance exited OK"
+}
+_wait_for_boosteroid_close
+
 # ── Portal intercept for Google login ───────────────────────────────────────
 # Qt5 calls org.freedesktop.portal.Desktop.OpenURI via D-Bus instead of
 # xdg-open, bypassing our PATH wrapper.  We claim that portal name on the
@@ -99,6 +130,9 @@ sleep 0.3   # let the service register before Boosteroid starts
 # ── Launch ───────────────────────────────────────────────────────────────────
 # Add Boosteroid's bundled libraries to the search path.
 export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
+# Ensure status file is gone before launch so splash closes normally
+rm -f "${STATUS_FILE}"
 
 # Wait for the splash to finish before starting Boosteroid.
 # Boosteroid immediately maps a fullscreen window and Gamescope switches

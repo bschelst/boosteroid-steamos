@@ -69,11 +69,11 @@ flatpak install --user ./org.schelstraete.boosteroid.flatpak
 
 ## 🕹️ Controller layout
 
-A Steam Input layout is installed automatically on every launch. It has two modes — use **L4** (lower left grip) to switch between them at any time.
+A Steam Input layout is installed automatically on every launch with two modes you can switch at any time.
 
-### Default mode — Mouse + Keyboard
+### Steam Deck (controller_neptune)
 
-Use this mode to navigate Boosteroid's menus and game browser.
+#### Default mode — Mouse + Keyboard
 
 | Input | Action |
 |---|---|
@@ -81,32 +81,69 @@ Use this mode to navigate Boosteroid's menus and game browser.
 | Right trackpad click | Left click |
 | Right trackpad double-tap | Switch to Gamepad mode |
 | Left stick | Mouse movement |
-| Left stick click | Left click |
+| D-pad | Arrow keys / scroll |
 | **A** | Left click |
 | **B** | Right click |
 | **X** | Space |
 | **Y** | Escape |
-| D-pad | Arrow keys |
 | Left trigger | Left click |
 | Right trigger | Right click |
-| LB | Page Up |
-| RB | Page Down |
-| Start | Escape |
-| Select | Tab |
+| LB / RB | Page Up / Page Down |
+| Start (☰) | Escape |
+| Select (⧉) | Tab |
+| **L4** (lower left grip) | Alt+R (Boosteroid shortcut) |
+| **L5** (upper left grip) | Switch Mouse+Keyboard ↔ Gamepad |
+| **R5** (upper right grip) | Ctrl+F2 (stream shortcut) |
 
-### Gamepad mode
+#### Gamepad mode
 
-Full xinput gamepad passthrough — all buttons, sticks and triggers are passed straight through to the game.
+Full xinput passthrough — all buttons, sticks and triggers sent directly to the game. Switch back with **L5** or right trackpad double-tap.
 
-### Grip buttons (available in both modes)
+---
+
+### PS5 DualSense
+
+#### Default mode — Mouse + Keyboard
 
 | Input | Action |
 |---|---|
-| **L4** (lower left grip) | Switch between Mouse+Keyboard ↔ Gamepad |
-| **R4** (lower right grip) | Open Boosteroid menu |
-| **L5** (upper left grip) | Start recording |
+| Touchpad | Mouse cursor (absolute) |
+| Touchpad click | Left click |
+| Touchpad double-tap | Switch to Gamepad mode |
+| Left stick | Mouse movement |
+| D-pad | Arrow keys |
+| **Cross** | Left click |
+| **Circle** | Right click |
+| **Square** | Space |
+| **Triangle** | Escape |
+| Left trigger | Left click |
+| Right trigger | Right click |
+| L1 / R1 | Page Up / Page Down |
+| Options | Escape — long-press = Ctrl+F2 — double-press = Alt+R |
+| Create | Tab — long-press = Switch Mouse+Keyboard ↔ Gamepad |
 
-> **Note:** The layout is reset on every launch. Any changes made via Steam → Controller Settings will be overwritten.
+#### Gamepad mode
+
+Full xinput passthrough — all buttons, sticks and triggers sent directly to the game.
+
+---
+
+> **Note:** The layout is written on every launch but only if the file doesn't already exist. To reset to defaults, delete `~/.local/share/Steam/steamapps/common/Steam Controller Configs/*/config/boosteroid steamos/controller_*.vdf` and restart Steam.
+
+---
+
+## 🐛 Debug mode
+
+By default, `[debug]` lines from the Boosteroid client are stripped from `/tmp/boosteroid.log` to keep it readable.
+
+To enable full debug output, add `--env=DEBUG=1` to the Steam shortcut's **Launch Options**:
+
+1. In Game Mode, press **Steam → Library → Boosteroid SteamOS → ⚙ Manage → Edit launch options**
+2. Change the field to:
+   ```
+   run --env=DEBUG=1 org.schelstraete.boosteroid
+   ```
+3. Save and relaunch — all `[debug]` lines will now appear in `/tmp/boosteroid.log`
 
 ---
 

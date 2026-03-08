@@ -28,6 +28,8 @@ except Exception as e:
     _log(f"GTK unavailable, skipping: {e}")
     sys.exit(0)
 
+STATUS_FILE   = "/tmp/.boosteroid_splash_status"
+
 MAX_SECONDS   = 5.0    # internet OK  -> close after 5 s
 WARN_SECONDS  = 10.0   # no internet  -> close after 10 s
 TICK_MS       = 50
@@ -125,6 +127,7 @@ class SplashScreen:
         self._history_box    = None
         self._history_labels = []     # pre-created; revealed on step advance
         self._history_index  = 0
+        self._launcher_waiting = False
 
         _log("applying CSS")
         provider = Gtk.CssProvider()
@@ -249,6 +252,7 @@ class SplashScreen:
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, 15, self._on_sigterm)
         GLib.timeout_add(TICK_MS, self._tick)
         GLib.timeout_add(GLOW_PULSE_MS, self._pulse_glow)
+        GLib.timeout_add(500, self._poll_launcher)
         self._close_tid = GLib.timeout_add(int(MAX_SECONDS * 1000), self._close)
 
         _log("showing window")
@@ -285,6 +289,50 @@ class SplashScreen:
         if self._history_index < len(self._history_labels):
             self._history_labels[self._history_index].set_opacity(0.35)
             self._history_index += 1
+
+    # ── launcher status file polling ──────────────────────────────────────
+
+    def _poll_launcher(self):
+        try:
+            with open(STATUS_FILE) as f:
+                line = f.read().strip()
+        except FileNotFoundError:
+            if self._launcher_waiting:
+                self._launcher_waiting = False
+                if self._close_tid is not None:
+                    GLib.source_remove(self._close_tid)
+                self._close_tid = GLib.timeout_add(3000, self._close)
+            return True
+        except Exception:
+            return True
+
+        if line.startswith("step:") and not self.warned:
+            msg = line[5:]
+            self._launcher_waiting = True
+            self.spinner.start()
+            self.spinner.show()
+            self.status_label.set_text("\u23f3  " + msg)
+            self.status_label.set_opacity(1.0)
+            self._step_fade = 1.0
+            self._countdown_label.set_text("")
+            if self._close_tid is not None:
+                GLib.source_remove(self._close_tid)
+            # 10 s from now — covers the 4 s retry interval plus headroom
+            self._close_tid = GLib.timeout_add(10000, self._close)
+        elif line.startswith("warn:") and not self.warned:
+            self._launcher_waiting = False
+            self.warned = True
+            self.spinner.stop()
+            self.spinner.hide()
+            self.status_label.set_text("\u26a0  " + line[5:])
+            self.status_label.get_style_context().add_class("warning")
+            self.bar.get_style_context().add_class("warning")
+            self._countdown_label.get_style_context().add_class("warning")
+            if self._close_tid is not None:
+                GLib.source_remove(self._close_tid)
+            self.max_time = WARN_SECONDS
+            self._close_tid = GLib.timeout_add(int(WARN_SECONDS * 1000), self._close)
+        return True
 
     # ── glow heartbeat + warning pulse ────────────────────────────────────
 
@@ -346,7 +394,10 @@ class SplashScreen:
         self.elapsed += TICK_MS / 1000.0
 
         # Progress bar + countdown
-        if not self._net_checked:
+        if self._launcher_waiting:
+            self.bar.pulse()
+            self._countdown_label.set_text("")
+        elif not self._net_checked:
             self.bar.pulse()
             self._countdown_label.set_text("")
         else:
@@ -384,7 +435,7 @@ class SplashScreen:
             self._step_fade = min(1.0, self._step_fade + 0.18)
             self.status_label.set_opacity(self._step_fade)
 
-        return self.elapsed < self.max_time
+        return self._launcher_waiting or self.elapsed < self.max_time
 
     # ── close / signal ────────────────────────────────────────────────────
 

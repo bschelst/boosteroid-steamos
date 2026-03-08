@@ -7,22 +7,9 @@
 
 > **Not affiliated with Boosteroid, Valve, or Steam.** See [Disclaimer](#%EF%B8%8F-disclaimer) below.
 
-An **unofficial** Flatpak package that makes Boosteroid cloud gaming work properly on Steam Deck and SteamOS — something Boosteroid themselves have failed to provide despite having no native client available on Steam Deck.
+An **unofficial** Flatpak that brings Boosteroid cloud gaming to the Steam Deck — something Boosteroid has never officially provided despite the platform's popularity.
 
-This project downloads and runs the **official, unmodified Boosteroid binary** from boosteroid.com. It does nothing more than package it into a Flatpak sandbox with all the dependencies and configuration needed to run on SteamOS.
-
----
-
-## 🤦 Why this exists
-
-Boosteroid offers a Linux `.deb` / AUR package, but getting it to run on Steam Deck has always been a mess:
-
-- SteamOS has a **read-only filesystem** — you cannot install `.deb` packages the normal way
-- The binary requires `libnuma.so.1`, a library missing from the Steam Deck environment
-- There is no official Flatpak, no Snap, no AppImage — nothing that works out of the box
-- Workarounds involve switching to Desktop Mode, installing third-party package managers, fighting with filesystem permissions, or running scripts blindly from Reddit posts
-
-The Steam Deck has existed since 2022. In over three years they have not shipped a package format that works on SteamOS. This project exists because they didn't.
+This project downloads and runs the **official, unmodified Boosteroid binary** from boosteroid.com. It only packages it into a Flatpak sandbox with the dependencies and configuration needed to run on SteamOS.
 
 ---
 
@@ -30,12 +17,11 @@ The Steam Deck has existed since 2022. In over three years they have not shipped
 
 - **One-click install** from Desktop Mode via the included `.desktop` installer
 - **First-run auto-setup**: downloads the official Boosteroid client on first launch — no manual steps
-- **Steam library integration**: automatically adds Boosteroid as a non-Steam game shortcut
-- **Hardware video decode** on AMD (Steam Deck): VA-API enabled automatically via the `radeonsi` driver
-- **Controllers & headsets**: full `/dev/input/*` access for gamepads, USB and Bluetooth audio devices
-- **Google login in Game Mode**: OAuth URLs route through Steam's built-in browser via Gamescope
-- **Audio**: PulseAudio socket with PipeWire compatibility layer
-- **Wayland + X11**: works under Gamescope (Game Mode) and KDE Plasma (Desktop Mode)
+- **Steam library integration**: automatically adds Boosteroid as a shortcut in your Steam library
+- **Hardware-accelerated video** on Steam Deck: AMD VA-API enabled automatically
+- **Controllers & headsets**: full support for gamepads, USB and Bluetooth audio devices
+- **Google login in Game Mode**: opens in Steam's browser without leaving Game Mode
+- **Works in both modes**: Game Mode (Gamescope) and Desktop Mode (KDE Plasma)
 
 ---
 
@@ -47,21 +33,23 @@ Press **Steam button → Power → Switch to Desktop**.
 
 ### Step 2 — Download the installer
 
-Open a browser and go to the [latest release](https://github.com/bschelst/boosteroid-steamos/releases/latest). Download **`boosteroid-steamos.desktop`**.
+Click the **Install** button at the top of this page. The file `boosteroid-steamos.desktop` is saved to your **Downloads** folder.
 
 ### Step 3 — Run the installer
 
-In Dolphin (file manager), navigate to where you saved the file. **Right-click → Allow Launching**, then **double-click** it.
+Open **Dolphin** (the file manager) and go to your **Downloads** folder.
 
-A terminal window opens with a progress display and installs everything automatically.
+Right-click `boosteroid-steamos.desktop` → **Allow Launching**, then **double-click** it.
 
-### Step 4 — First launch
+A terminal window opens and installs everything automatically.
 
-Open **Boosteroid (unofficial)** from the app menu or switch back to Game Mode and find it in your Steam library.
+### Step 4 — Return to Game Mode
 
-On first launch (~30 seconds), the official Boosteroid client is downloaded from boosteroid.com and installed into your user data directory. This only happens once.
+Once the installer finishes, press **Steam → Return to Gaming Mode**.
 
-> **Tip:** Restart Steam after first launch to see the Boosteroid shortcut appear in your Game Mode library.
+Boosteroid will be in your Steam library. **On first launch**, the official Boosteroid client (~120 MB) is downloaded automatically — this only happens once.
+
+> **Note:** If Boosteroid doesn't appear in your library, restart Steam first: in Desktop Mode, click **Steam → Restart Steam**.
 
 ---
 
@@ -79,25 +67,13 @@ flatpak install --user ./org.schelstraete.boosteroid.flatpak
 
 ---
 
-## ▶ Decoder options
+## 🕹️ Controller layout
 
-On AMD (Steam Deck), VA-API hardware decode is selected automatically. You can override this manually:
-
-```bash
-flatpak run org.schelstraete.boosteroid           # auto (VA-API on AMD)
-flatpak run org.schelstraete.boosteroid -vaapi    # force VA-API
-flatpak run org.schelstraete.boosteroid -vdpau    # VDPAU (NVIDIA)
-flatpak run org.schelstraete.boosteroid -cuda     # CUDA (NVIDIA with CUDA)
-flatpak run org.schelstraete.boosteroid -s        # software decoder
-```
-
----
-
-## 🎮 Controller layout
-
-A Steam Input layout is installed automatically on every launch. It has two modes you can switch between at any time.
+A Steam Input layout is installed automatically on every launch. It has two modes — use **L5** (upper left grip) to switch between them at any time.
 
 ### Default mode — Mouse + Keyboard
+
+Use this mode to navigate Boosteroid's menus and game browser.
 
 | Input | Action |
 |---|---|
@@ -122,15 +98,29 @@ A Steam Input layout is installed automatically on every launch. It has two mode
 
 Full xinput gamepad passthrough — all buttons, sticks and triggers are passed straight through to the game.
 
-### Grip buttons (both modes)
+### Grip buttons (available in both modes)
 
 | Input | Action |
 |---|---|
 | **L4** (lower left grip) | Alt+R |
 | **L5** (upper left grip) | Switch between Mouse+Keyboard ↔ Gamepad |
-| **R5** (upper right grip) | Ctrl+F2 (Boosteroid layout shortcut, active during streaming) |
+| **R5** (upper right grip) | Ctrl+F2 (Boosteroid streaming shortcut) |
 
-> **Note:** The layout is updated on every launch. Any changes made via Steam → Controller Settings will be overwritten on the next launch.
+> **Note:** The layout is reset on every launch. Any changes made via Steam → Controller Settings will be overwritten.
+
+---
+
+## ⚙️ Video decoder
+
+On AMD (Steam Deck), VA-API hardware decode is selected automatically. You can override this:
+
+```bash
+flatpak run org.schelstraete.boosteroid           # auto (VA-API on AMD)
+flatpak run org.schelstraete.boosteroid -vaapi    # force VA-API
+flatpak run org.schelstraete.boosteroid -vdpau    # VDPAU (NVIDIA)
+flatpak run org.schelstraete.boosteroid -cuda     # CUDA (NVIDIA with CUDA)
+flatpak run org.schelstraete.boosteroid -s        # software decoder
+```
 
 ---
 
@@ -145,6 +135,35 @@ To also remove the downloaded Boosteroid client:
 ```bash
 rm -rf ~/.var/app/org.schelstraete.boosteroid
 ```
+
+---
+
+## ⚠️ Known issues
+
+- **Network test fails** — the in-app network test reports all servers as unreachable. This is a Flatpak sandbox limitation (ICMP ping requires elevated privileges not available in user-mode builds). Actual game streaming is unaffected.
+
+---
+
+## 🩹 Troubleshooting
+
+**Boosteroid doesn't appear in Game Mode library after first launch**
+
+Restart Steam from Desktop Mode (`steam -shutdown && steam`) or reboot.
+
+**Google login doesn't open a browser in Game Mode**
+
+This should work automatically via Steam's built-in browser. If it doesn't, log in from Desktop Mode first — the session persists when you switch back to Game Mode.
+
+**Black screen or no video after logging in**
+
+Try forcing the software decoder:
+```bash
+flatpak run org.schelstraete.boosteroid -s
+```
+
+**Controller not detected**
+
+Make sure you launch Boosteroid from Steam (not directly from the app menu) so it runs under the Steam Input layer.
 
 ---
 
@@ -169,36 +188,16 @@ flatpak install --user ./org.schelstraete.boosteroid.flatpak
 
 ---
 
-## ⚠️ Known issues
+## 🤔 Why this exists
 
-- **Network test fails** — the in-app network test reports all servers as unreachable. This is a Flatpak sandbox limitation (ICMP ping requires elevated privileges not available in user-mode builds). Actual game streaming is unaffected.
+Boosteroid offers a Linux `.deb` / AUR package, but getting it to run on Steam Deck has always been a mess:
 
----
+- SteamOS has a **read-only filesystem** — you cannot install `.deb` or AUR packages the normal way
+- The binary requires `libnuma.so.1`, a library missing from the Steam Deck environment
+- There is no official Flatpak, no Snap, no AppImage — nothing that works out of the box
+- Workarounds involve switching to Desktop Mode, installing third-party package managers, fighting with filesystem permissions, or running scripts blindly from the internet
 
-## 🩹 Troubleshooting
-
-**Boosteroid doesn't appear in Game Mode library after first launch**
-Restart Steam from Desktop Mode (`steam -shutdown && steam`) or reboot.
-
-**Google login doesn't open a browser in Game Mode**
-This should work automatically via Steam's built-in browser. If it doesn't, log in from Desktop Mode first — the session persists when you switch back to Game Mode.
-
-**Black screen or no video after logging in**
-Try forcing the software decoder:
-```bash
-flatpak run org.schelstraete.boosteroid -s
-```
-
-**Controller not detected**
-Make sure you launch Boosteroid from Steam (not directly from the app menu) so it runs under the Steam Input layer.
-
----
-
-## 📝 Notes
-
-- **x86\_64 only** — the official Boosteroid client is 64-bit only
-- **~120 MB** downloaded from boosteroid.com on first launch
-- The downloaded binary is the **official, unmodified Boosteroid client** — this project only packages it
+The Steam Deck has existed since 2022. In over three years they have not shipped a package format that works on SteamOS. This project exists because they didn't.
 
 ---
 

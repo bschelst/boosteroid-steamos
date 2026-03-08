@@ -107,5 +107,14 @@ if [ -n "${SPLASH_PID}" ]; then
     wait "${SPLASH_PID}" 2>/dev/null || true
 fi
 
+# ── Filter debug output unless DEBUG=1 ──────────────────────────────────────
+# By default [debug] lines from Boosteroid are stripped from the log.
+# To keep them, add --env=DEBUG=1 to Steam launch options:
+#   run --env=DEBUG=1 org.schelstraete.boosteroid
 # shellcheck disable=SC2086
-exec "${BINARY}" ${DECODE_FLAG} "$@"
+if [ "${DEBUG:-0}" = "1" ]; then
+    echo "==> Debug mode ON: [debug] lines will appear in log"
+    exec "${BINARY}" ${DECODE_FLAG} "$@"
+else
+    "${BINARY}" ${DECODE_FLAG} "$@" 2>&1 | grep --line-buffered -v '\[debug\]'
+fi

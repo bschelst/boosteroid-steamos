@@ -98,7 +98,7 @@ window {
 #countdown { color: rgba(27, 159, 255, 0.50); font-size: 11px; }
 #countdown.warning { color: rgba(255, 152, 0, 0.60); }
 
-#version { color: rgba(27, 159, 255, 0.50); font-size: 11px; }
+#version { color: rgba(255, 255, 255, 0.70); font-size: 13px; }
 
 progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }

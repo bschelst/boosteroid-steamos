@@ -31,8 +31,11 @@ MAX_SECONDS  = 10.0
 WARN_SECONDS = MAX_SECONDS + 4.0
 TICK_MS      = 50
 
-CHECK_HOST    = "boosteroid.com"
-CHECK_PORT    = 443
+# Use a raw IP to bypass DNS — when internet is down, DNS resolution can
+# hang far longer than any socket timeout, causing the check to return only
+# after the splash is gone.  Cloudflare 1.1.1.1:53 is a reliable target.
+CHECK_HOST    = "1.1.1.1"
+CHECK_PORT    = 53
 CHECK_TIMEOUT = 3.0
 
 LOGO_PATH  = "/app/share/boosteroid/grid/wide.png"
@@ -164,8 +167,10 @@ class SplashScreen:
                                             timeout=CHECK_TIMEOUT)
             sock.close()
             reachable = True
-        except Exception:
+        except Exception as e:
+            _log(f"internet check failed: {e}")
             reachable = False
+        _log(f"internet reachable: {reachable}")
         GLib.idle_add(self._on_internet_result, reachable)
 
     def _on_internet_result(self, reachable):

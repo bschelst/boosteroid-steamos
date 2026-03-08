@@ -5,7 +5,7 @@
 
 > **Not affiliated with Boosteroid, Valve, or Steam.** See [Disclaimer](#%EF%B8%8F-disclaimer) below.
 
-An **unofficial** Flatpak package that makes Boosteroid cloud gaming work properly on Steam Deck and SteamOS — something Boosteroid themselves have failed to provide in over four years of being available on Linux.
+An **unofficial** Flatpak package that makes Boosteroid cloud gaming work properly on Steam Deck and SteamOS — something Boosteroid themselves have failed to provide despite having no native client available on Steam Deck.
 
 This project downloads and runs the **official, unmodified Boosteroid binary** from boosteroid.com. It does nothing more than package it into a Flatpak sandbox with all the dependencies and configuration needed to run on SteamOS.
 
@@ -13,14 +13,14 @@ This project downloads and runs the **official, unmodified Boosteroid binary** f
 
 ## 🤦 Why this exists
 
-Boosteroid offers a Linux `.deb` package, but getting it to run on Steam Deck has always been a mess:
+Boosteroid offers a Linux `.deb` / AUR package, but getting it to run on Steam Deck has always been a mess:
 
 - SteamOS has a **read-only filesystem** — you cannot install `.deb` packages the normal way
 - The binary requires `libnuma.so.1`, a library missing from the Steam Deck environment
 - There is no official Flatpak, no Snap, no AppImage — nothing that works out of the box
 - Workarounds involve switching to Desktop Mode, installing third-party package managers, fighting with filesystem permissions, or running scripts blindly from Reddit posts
 
-Boosteroid has been on Linux since 2020. In four years they have not shipped a package format that works on SteamOS. This project exists because they didn't.
+The Steam Deck has existed since 2022. In over three years they have not shipped a package format that works on SteamOS. This project exists because they didn't.
 
 ---
 

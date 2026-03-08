@@ -1,17 +1,35 @@
 <svg width="880" height="280" viewBox="0 0 880 280" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="softglow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
+    <linearGradient id="accent" x1="0" y1="0" x2="880" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2096D9"/>
+      <stop offset="1" stop-color="#5C35EE"/>
+    </linearGradient>
+    <filter id="softglow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <!-- Cloud icon — centred in canvas (cloud bbox: x=50..206, y=64..180, scaled 1.8x) -->
-  <g transform="translate(210, -80) scale(1.8)" filter="url(#softglow)">
+  <!-- Cloud icon — left -->
+  <g transform="translate(10, 12) scale(0.98)" filter="url(#softglow)">
     <circle cx="88"  cy="136" r="40" fill="white"/>
     <circle cx="130" cy="112" r="48" fill="white"/>
     <circle cx="172" cy="136" r="34" fill="white"/>
     <rect x="50" y="136" width="154" height="44" rx="6" fill="white"/>
     <polygon points="104,136 104,174 154,155" fill="#1a4fa8"/>
   </g>
+
+  <!-- BOOSTEROID — font-size reduced from 112 to 72 so text fits in 880px canvas -->
+  <text x="240" y="165"
+        font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+        font-size="72" font-weight="900"
+        fill="white" letter-spacing="-1">BOOSTEROID</text>
+
+  <!-- Gradient underline -->
+  <rect x="240" y="182" width="580" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
+
+  <!-- Tagline -->
+  <text x="242" y="224"
+        font-family="Arial, sans-serif" font-size="22"
+        fill="#7a9acc" letter-spacing="4">CLOUD GAMING  ·  STEAM DECK</text>
 </svg>

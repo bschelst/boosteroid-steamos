@@ -2,6 +2,7 @@
 
 [![Build Flatpak](https://github.com/bschelst/boosteroid-steamos/actions/workflows/build.yml/badge.svg)](https://github.com/bschelst/boosteroid-steamos/actions/workflows/build.yml)
 [![Latest Release](https://img.shields.io/github/v/release/bschelst/boosteroid-steamos)](https://github.com/bschelst/boosteroid-steamos/releases/latest)
+[![Install](https://img.shields.io/badge/⬇_Install-Steam_Deck-1a9fff?style=for-the-badge)](https://github.com/bschelst/boosteroid-steamos/releases/latest/download/boosteroid-steamos.desktop)
 
 > **Not affiliated with Boosteroid, Valve, or Steam.** See [Disclaimer](#%EF%B8%8F-disclaimer) below.
 

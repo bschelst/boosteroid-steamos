@@ -36,46 +36,138 @@ try:
     import gi
     gi.require_version("GLib", "2.0")
     gi.require_version("Gtk", "3.0")
-    from gi.repository import GLib, Gio, Gtk
+    gi.require_version("GdkPixbuf", "2.0")
+    from gi.repository import GLib, Gio, Gtk, GdkPixbuf
 except ImportError as e:
     log(f"gi unavailable ({e}) — portal intercept disabled")
     sys.exit(0)
 
 
+_CSS = b"""
+window {
+    background-color: #1b1b2e;
+}
+box {
+    background-color: transparent;
+}
+label.title {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: bold;
+}
+label.desc {
+    color: #cccccc;
+    font-size: 14px;
+}
+button.install {
+    background-image: none;
+    background-color: #1a9fff;
+    color: #ffffff;
+    border-radius: 6px;
+    border: none;
+    padding: 8px 24px;
+    font-size: 14px;
+    font-weight: bold;
+    min-width: 120px;
+}
+button.install:hover {
+    background-color: #2aafff;
+}
+button.install:disabled {
+    background-color: #334455;
+    color: #667788;
+}
+button.later {
+    background-image: none;
+    background-color: transparent;
+    color: #888888;
+    border: 1px solid #334455;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    min-width: 100px;
+}
+button.later:hover {
+    background-color: #223344;
+}
+"""
+
+
 def _show_index_hint():
-    """Show a GTK dialog from within the Flatpak (display always accessible here)."""
+    """Show a modern branded GTK window from within the Flatpak."""
     try:
-        dlg = Gtk.Dialog(title="Install Index")
-        dlg.set_default_size(420, -1)
+        win = Gtk.Window()
+        win.set_title("Install Index")
+        win.set_default_size(480, -1)
+        win.set_resizable(False)
+        win.set_position(Gtk.WindowPosition.CENTER)
 
-        content = dlg.get_content_area()
-        content.set_spacing(8)
-        content.set_margin_top(16)
-        content.set_margin_bottom(8)
-        content.set_margin_start(16)
-        content.set_margin_end(16)
-
-        label = Gtk.Label()
-        label.set_markup(
-            "Install <b>Index</b> from Flathub to browse and play\n"
-            "your recorded clips in Game Mode."
+        provider = Gtk.CssProvider()
+        provider.load_from_data(_CSS)
+        Gtk.StyleContext.add_provider_for_screen(
+            win.get_screen(), provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
-        label.set_line_wrap(True)
-        content.add(label)
 
-        dlg.add_button("Later", Gtk.ResponseType.CANCEL)
-        install_btn = dlg.add_button("Install", Gtk.ResponseType.OK)
-        dlg.show_all()
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        outer.set_margin_top(32)
+        outer.set_margin_bottom(32)
+        outer.set_margin_start(32)
+        outer.set_margin_end(32)
+        win.add(outer)
 
-        installing = [False]  # mutable flag — prevents re-trigger on Close click
+        # Logo
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
+                "/app/share/boosteroid/icon-256.png", 96, 96,
+            )
+            img = Gtk.Image.new_from_pixbuf(pixbuf)
+        except Exception:
+            img = Gtk.Image.new_from_icon_name("package-x-generic", Gtk.IconSize.DIALOG)
+        img.set_margin_bottom(16)
+        outer.pack_start(img, False, False, 0)
 
-        def on_response(d, response_id):
-            if response_id != Gtk.ResponseType.OK or installing[0]:
-                d.destroy()
+        # Title
+        title = Gtk.Label(label="Browse clips in Game Mode")
+        title.get_style_context().add_class("title")
+        title.set_margin_bottom(8)
+        outer.pack_start(title, False, False, 0)
+
+        # Description / status
+        label = Gtk.Label(label="Install Index from Flathub to browse\nand play your recorded clips.")
+        label.get_style_context().add_class("desc")
+        label.set_justify(Gtk.Justification.CENTER)
+        label.set_margin_bottom(32)
+        outer.pack_start(label, False, False, 0)
+
+        # Buttons
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        btn_box.set_halign(Gtk.Align.CENTER)
+        outer.pack_start(btn_box, False, False, 0)
+
+        later_btn = Gtk.Button(label="Later")
+        later_btn.get_style_context().add_class("later")
+        btn_box.pack_start(later_btn, False, False, 0)
+
+        install_btn = Gtk.Button(label="Install")
+        install_btn.get_style_context().add_class("install")
+        btn_box.pack_start(install_btn, False, False, 0)
+
+        win.show_all()
+
+        installing = [False]
+
+        def on_later(*_):
+            win.destroy()
+
+        def on_install(*_):
+            if installing[0]:
+                win.destroy()
                 return
             installing[0] = True
-            label.set_text("Installing… please wait.")
+            label.set_text("Installing... please wait.")
             install_btn.set_sensitive(False)
+            later_btn.set_sensitive(False)
 
             def do_install():
                 r = subprocess.run(
@@ -86,12 +178,9 @@ def _show_index_hint():
 
                 def on_done():
                     if r.returncode == 0:
-                        label.set_text(
-                            "Index installed!\n"
-                            "Close and tap 'Open Clip Location' again."
-                        )
+                        label.set_text("Installed! Close and tap\n'Open Clip Location' again.")
                     else:
-                        err = r.stderr.decode(errors="replace").strip()[-120:]
+                        err = r.stderr.decode(errors="replace").strip()[-100:]
                         label.set_text(f"Install failed:\n{err}")
                     install_btn.set_label("Close")
                     install_btn.set_sensitive(True)
@@ -101,7 +190,9 @@ def _show_index_hint():
 
             threading.Thread(target=do_install, daemon=True).start()
 
-        dlg.connect("response", on_response)
+        later_btn.connect("clicked", on_later)
+        install_btn.connect("clicked", on_install)
+
     except Exception as exc:
         log(f"hint dialog error: {exc}")
     return False

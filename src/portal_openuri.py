@@ -85,7 +85,13 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             path = os.readlink(f"/proc/self/fd/{fd}")
             os.close(fd)
             log(f"OpenFile: {path}")
-            subprocess.Popen(["flatpak-spawn", "--host", "xdg-open", path])
+            # xdg-open fails in Game Mode (no XDG_CURRENT_DESKTOP set) for directories.
+            # Try file managers directly: dolphin (KDE/SteamOS), nautilus (GNOME/Bazzite).
+            subprocess.Popen([
+                "flatpak-spawn", "--host", "bash", "-c",
+                'dolphin "$1" 2>/dev/null || nautilus "$1" 2>/dev/null || xdg-open "$1"',
+                "--", path,
+            ])
         except Exception as exc:
             log(f"OpenFile error: {exc}")
         invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))

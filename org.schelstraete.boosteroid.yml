@@ -28,8 +28,8 @@ finish-args:
   # Allow sandbox to own the portal name so our fake service intercepts Qt's
   # QDesktopServices::openUrl() calls before they reach the host portal
   - --own-name=org.freedesktop.portal.Desktop
-  # Share host /tmp so /tmp/boosteroid.log is readable from outside the sandbox
-  - --filesystem=/tmp
+  # Write logs to ~/logs/boosteroid.log (accessible from Desktop Mode)
+  - --filesystem=~/logs:create
   # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
   - --env=LD_PRELOAD=
 

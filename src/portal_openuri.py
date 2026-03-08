@@ -19,7 +19,8 @@ Requires --own-name=org.freedesktop.portal.Desktop in the Flatpak manifest.
 import subprocess
 import sys
 
-LOG = "/tmp/boosteroid.log"
+import os
+LOG = os.path.join(os.path.expanduser("~"), "logs", "boosteroid.log")
 
 
 def log(s):

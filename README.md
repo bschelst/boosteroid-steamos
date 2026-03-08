@@ -135,7 +135,7 @@ Full xinput passthrough — all buttons, sticks and triggers sent directly to th
 
 ## 🐛 Debug mode
 
-By default, `[debug]` lines from the Boosteroid client are stripped from `/tmp/boosteroid.log` to keep it readable.
+By default, `[debug]` lines from the Boosteroid client are stripped from `~/logs/boosteroid.log` to keep it readable.
 
 To enable full debug output, add `--env=DEBUG=1` to the Steam shortcut's **Launch Options**:
 
@@ -144,7 +144,7 @@ To enable full debug output, add `--env=DEBUG=1` to the Steam shortcut's **Launc
    ```
    run --env=DEBUG=1 org.schelstraete.boosteroid
    ```
-3. Save and relaunch — all `[debug]` lines will now appear in `/tmp/boosteroid.log`
+3. Save and relaunch — all `[debug]` lines will now appear in `~/logs/boosteroid.log`
 
 ---
 

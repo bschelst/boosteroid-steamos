@@ -22,8 +22,9 @@ STATUS_FILE="/tmp/.boosteroid_splash_status"
 # Default SIGTERM handling is restored just before Boosteroid is launched.
 trap 'echo "==> Startup: SIGTERM received, continuing"' TERM
 
-# ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
-LOG=/tmp/boosteroid.log
+# ── Debug log (check ~/logs/boosteroid.log from Desktop Mode after launch) ───
+mkdir -p "$HOME/logs"
+LOG=$HOME/logs/boosteroid.log
 > "$LOG"
 exec > >(tee -a "$LOG") 2>&1
 VERSION=$(cat /app/share/boosteroid/version 2>/dev/null || echo "unknown")
@@ -82,19 +83,19 @@ mkdir -p "${_OVERRIDE_BIN}"
 cat > "${_OVERRIDE_BIN}/xdg-open" << 'EOF'
 #!/bin/bash
 URL="$1"
-echo "[xdg-open] called with: $URL" >> /tmp/boosteroid.log
+echo "[xdg-open] called with: $URL" >> $HOME/logs/boosteroid.log
 
 # Method 1: Steam overlay browser — works in Game Mode and Desktop Mode on SteamOS.
 # Tells the already-running Steam process to open the URL in its built-in browser.
-if flatpak-spawn --host steam "steam://openurl/$URL" >> /tmp/boosteroid.log 2>&1; then
-    echo "[xdg-open] steam://openurl OK" >> /tmp/boosteroid.log
+if flatpak-spawn --host steam "steam://openurl/$URL" >> $HOME/logs/boosteroid.log 2>&1; then
+    echo "[xdg-open] steam://openurl OK" >> $HOME/logs/boosteroid.log
     exit 0
 fi
-echo "[xdg-open] steam://openurl failed, trying host xdg-open" >> /tmp/boosteroid.log
+echo "[xdg-open] steam://openurl failed, trying host xdg-open" >> $HOME/logs/boosteroid.log
 
 # Method 2: host xdg-open — fallback for Desktop Mode if Steam isn't in PATH.
-flatpak-spawn --host xdg-open "$URL" >> /tmp/boosteroid.log 2>&1
-echo "[xdg-open] xdg-open exit=$?" >> /tmp/boosteroid.log
+flatpak-spawn --host xdg-open "$URL" >> $HOME/logs/boosteroid.log 2>&1
+echo "[xdg-open] xdg-open exit=$?" >> $HOME/logs/boosteroid.log
 EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"

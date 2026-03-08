@@ -167,6 +167,12 @@ flatpak install --user ./org.schelstraete.boosteroid.flatpak
 
 ---
 
+## ⚠️ Known issues
+
+- **Network test fails** — the in-app network test reports all servers as unreachable. This is a Flatpak sandbox limitation (ICMP ping requires elevated privileges not available in user-mode builds). Actual game streaming is unaffected.
+
+---
+
 ## 🩹 Troubleshooting
 
 **Boosteroid doesn't appear in Game Mode library after first launch**

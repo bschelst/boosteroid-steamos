@@ -97,7 +97,7 @@ window {
 #countdown { color: rgba(27, 159, 255, 0.50); font-size: 11px; }
 #countdown.warning { color: rgba(255, 152, 0, 0.60); }
 
-#version { color: #1e3a5f; font-size: 10px; }
+#version { color: rgba(27, 159, 255, 0.40); font-size: 10px; }
 
 progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
@@ -208,7 +208,7 @@ class SplashScreen:
             lbl = Gtk.Label(label=f"\u2713  {text}")
             lbl.set_name("step-done")
             lbl.set_halign(Gtk.Align.START)
-            lbl.set_no_show_all(True)   # excluded from show_all(); we reveal manually
+            lbl.set_opacity(0.0)        # transparent but takes space: no layout shift on reveal
             self._history_box.pack_start(lbl, False, False, 0)
             self._history_labels.append(lbl)
 
@@ -280,9 +280,9 @@ class SplashScreen:
             return None
 
     def _add_history_step(self, _text):
-        """Reveal the next pre-created history label (no widget creation at runtime)."""
+        """Reveal the next history label by restoring its opacity (no layout change)."""
         if self._history_index < len(self._history_labels):
-            self._history_labels[self._history_index].show()
+            self._history_labels[self._history_index].set_opacity(0.35)
             self._history_index += 1
 
     # ── glow heartbeat + warning pulse ────────────────────────────────────

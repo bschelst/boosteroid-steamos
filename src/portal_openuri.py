@@ -34,10 +34,30 @@ def log(s):
 try:
     import gi
     gi.require_version("GLib", "2.0")
-    from gi.repository import GLib, Gio
+    gi.require_version("Gtk", "3.0")
+    from gi.repository import GLib, Gio, Gtk
 except ImportError as e:
     log(f"gi unavailable ({e}) — portal intercept disabled")
     sys.exit(0)
+
+
+def _show_index_hint():
+    """Show a GTK dialog from within the Flatpak (display always accessible here)."""
+    try:
+        dlg = Gtk.MessageDialog(
+            message_type=Gtk.MessageType.INFO,
+            buttons=Gtk.ButtonsType.OK,
+            text="Install Index to browse clips in Game Mode",
+        )
+        dlg.format_secondary_text(
+            "Install Index from Flathub to browse and play your recorded clips:\n\n"
+            "flatpak install flathub org.kde.index"
+        )
+        dlg.connect("response", lambda d, _: d.destroy())
+        dlg.show_all()
+    except Exception as exc:
+        log(f"hint dialog error: {exc}")
+    return False
 
 
 PORTAL_XML = """
@@ -96,17 +116,8 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
                     log("OpenFile: Game Mode — launching org.kde.index")
                     subprocess.Popen(["flatpak-spawn", "--host", "flatpak", "run", "org.kde.index", path])
                 else:
-                    log("OpenFile: Game Mode — org.kde.index not installed, showing install hint")
-                    install_hint = (
-                        "To browse clips in Game Mode, install Index from Flathub:\n\n"
-                        "flatpak install flathub org.kde.index"
-                    )
-                    subprocess.Popen([
-                        "flatpak-spawn", "--host", "bash", "-c",
-                        'kdialog --title "Install Index" --msgbox "$1" 2>/dev/null'
-                        ' || zenity --info --title "Install Index" --text "$1"',
-                        "--", install_hint,
-                    ])
+                    log("OpenFile: Game Mode — org.kde.index not installed, showing GTK hint")
+                    GLib.idle_add(_show_index_hint)
             else:
                 # Desktop Mode: use the system file manager directly.
                 log("OpenFile: Desktop Mode — opening with dolphin/nautilus")

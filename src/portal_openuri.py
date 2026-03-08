@@ -18,6 +18,7 @@ Requires --own-name=org.freedesktop.portal.Desktop in the Flatpak manifest.
 """
 import subprocess
 import sys
+import threading
 
 import os
 LOG = os.path.join(os.path.expanduser("~"), "logs", "boosteroid.log")
@@ -44,17 +45,63 @@ except ImportError as e:
 def _show_index_hint():
     """Show a GTK dialog from within the Flatpak (display always accessible here)."""
     try:
-        dlg = Gtk.MessageDialog(
-            message_type=Gtk.MessageType.INFO,
-            buttons=Gtk.ButtonsType.OK,
-            text="Install Index to browse clips in Game Mode",
+        dlg = Gtk.Dialog(title="Install Index")
+        dlg.set_default_size(420, -1)
+
+        content = dlg.get_content_area()
+        content.set_spacing(8)
+        content.set_margin_top(16)
+        content.set_margin_bottom(8)
+        content.set_margin_start(16)
+        content.set_margin_end(16)
+
+        label = Gtk.Label()
+        label.set_markup(
+            "Install <b>Index</b> from Flathub to browse and play\n"
+            "your recorded clips in Game Mode."
         )
-        dlg.format_secondary_text(
-            "Install Index from Flathub to browse and play your recorded clips:\n\n"
-            "flatpak install flathub org.kde.index"
-        )
-        dlg.connect("response", lambda d, _: d.destroy())
+        label.set_line_wrap(True)
+        content.add(label)
+
+        dlg.add_button("Later", Gtk.ResponseType.CANCEL)
+        install_btn = dlg.add_button("Install", Gtk.ResponseType.OK)
         dlg.show_all()
+
+        installing = [False]  # mutable flag — prevents re-trigger on Close click
+
+        def on_response(d, response_id):
+            if response_id != Gtk.ResponseType.OK or installing[0]:
+                d.destroy()
+                return
+            installing[0] = True
+            label.set_text("Installing… please wait.")
+            install_btn.set_sensitive(False)
+
+            def do_install():
+                r = subprocess.run(
+                    ["flatpak-spawn", "--host", "flatpak", "install",
+                     "--user", "--noninteractive", "flathub", "org.kde.index"],
+                    capture_output=True,
+                )
+
+                def on_done():
+                    if r.returncode == 0:
+                        label.set_text(
+                            "Index installed!\n"
+                            "Close and tap 'Open Clip Location' again."
+                        )
+                    else:
+                        err = r.stderr.decode(errors="replace").strip()[-120:]
+                        label.set_text(f"Install failed:\n{err}")
+                    install_btn.set_label("Close")
+                    install_btn.set_sensitive(True)
+                    return False
+
+                GLib.idle_add(on_done)
+
+            threading.Thread(target=do_install, daemon=True).start()
+
+        dlg.connect("response", on_response)
     except Exception as exc:
         log(f"hint dialog error: {exc}")
     return False

@@ -106,7 +106,11 @@ _wait_for_boosteroid_close() {
         echo "step:Waiting for previous Boosteroid to close (${i}/${max_attempts})..." \
             > "${STATUS_FILE}"
         echo "==> Attempt ${i}/${max_attempts}: still running, retrying in ${wait_secs}s..."
-        sleep "${wait_secs}"
+        sleep "${wait_secs}" || {
+            echo "==> Wait sleep interrupted — proceeding with launch"
+            rm -f "${STATUS_FILE}"
+            return 0
+        }
         i=$((i + 1))
     done
     rm -f "${STATUS_FILE}"

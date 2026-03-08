@@ -30,6 +30,8 @@ finish-args:
   - --own-name=org.freedesktop.portal.Desktop
   # Write logs to ~/logs/boosteroid.log (accessible from Desktop Mode)
   - --filesystem=~/logs:create
+  # Boosteroid saves clips to ~/Videos/BoosteroidClips/
+  - --filesystem=~/Videos:create
   # Clear LD_PRELOAD so Steam's preloads don't affect the Boosteroid binary
   - --env=LD_PRELOAD=
 

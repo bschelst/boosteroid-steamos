@@ -69,7 +69,7 @@ flatpak install --user ./org.schelstraete.boosteroid.flatpak
 
 ## 🕹️ Controller layout
 
-A Steam Input layout is installed automatically on every launch. It has two modes — use **L5** (upper left grip) to switch between them at any time.
+A Steam Input layout is installed automatically on every launch. It has two modes — use **L4** (lower left grip) to switch between them at any time.
 
 ### Default mode — Mouse + Keyboard
 
@@ -102,9 +102,9 @@ Full xinput gamepad passthrough — all buttons, sticks and triggers are passed 
 
 | Input | Action |
 |---|---|
-| **L4** (lower left grip) | Alt+R |
-| **L5** (upper left grip) | Switch between Mouse+Keyboard ↔ Gamepad |
-| **R5** (upper right grip) | Ctrl+F2 (Boosteroid streaming shortcut) |
+| **L4** (lower left grip) | Switch between Mouse+Keyboard ↔ Gamepad |
+| **R4** (lower right grip) | Open Boosteroid menu |
+| **L5** (upper left grip) | Start recording |
 
 > **Note:** The layout is reset on every launch. Any changes made via Steam → Controller Settings will be overwritten.
 

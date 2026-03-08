@@ -1,4 +1,4 @@
-# ☁ Boosteroid for Steam Deck (unofficial)
+# ☁ Boosteroid for Steam OS & Bazzite (unofficial)
 
 [![Build Flatpak](https://github.com/bschelst/boosteroid-steamos/actions/workflows/build.yml/badge.svg)](https://github.com/bschelst/boosteroid-steamos/actions/workflows/build.yml)
 [![Latest Release](https://img.shields.io/github/v/release/bschelst/boosteroid-steamos)](https://github.com/bschelst/boosteroid-steamos/releases/latest)
@@ -7,9 +7,9 @@
 
 > **Not affiliated with Boosteroid, Valve, or Steam.** See [Disclaimer](#%EF%B8%8F-disclaimer) below.
 
-An **unofficial** Flatpak that brings Boosteroid cloud gaming to the Steam Deck — something Boosteroid has never officially provided despite the platform's popularity.
+An **unofficial** Flatpak that brings native Boosteroid cloud gaming to the SteamOS (Steam Deck) & Bazzite — something Boosteroid has never officially provided despite the platform's popularity.
 
-This project downloads and runs the **official, unmodified Boosteroid binary** from boosteroid.com. It only packages it into a Flatpak sandbox with the dependencies and configuration needed to run on SteamOS.
+This project downloads and runs the **official, unmodified native Boosteroid binary** from boosteroid.com. It only packages it into a Flatpak sandbox with the dependencies and configuration needed to run on SteamOS/Bazzite.
 
 ---
 
@@ -26,7 +26,7 @@ This project downloads and runs the **official, unmodified Boosteroid binary** f
 
 ---
 
-## 🎮 Install on Steam Deck (recommended)
+## 🎮 Install on Steam Deck & Bazzite (recommended)
 
 ### 🖥️ Step 1 — Switch to Desktop Mode
 
@@ -40,7 +40,7 @@ Click the **Install** button at the top of this page. The file `boosteroid-steam
 
 Open **Dolphin** (the file manager) and go to your **Downloads** folder.
 
-Right-click `boosteroid-steamos.desktop` → **Allow Launching**, then **double-click** it.
+Double click `boosteroid-steamos.desktop` → **Allow Executing**
 
 A terminal window opens and installs everything automatically.
 
@@ -48,9 +48,9 @@ A terminal window opens and installs everything automatically.
 
 Once the installer finishes, press **Steam → Return to Gaming Mode**.
 
-Boosteroid will be in your Steam library. **On first launch**, the official Boosteroid client (~120 MB) is downloaded automatically — this only happens once.
+Boosteroid SteamOS will be in your Steam library. **On first launch**, the official Boosteroid client (~120 MB) is downloaded automatically — this only happens once.
 
-> **Note:** If Boosteroid doesn't appear in your library, restart Steam first: in Desktop Mode, click **Steam → Restart Steam**.
+> **Note:** If Boosteroid SteamOS doesn't appear in your library, restart Steam first.
 
 ---
 
@@ -201,7 +201,7 @@ flatpak run org.schelstraete.boosteroid -s
 
 **Controller not detected**
 
-Make sure you launch Boosteroid from Steam (not directly from the app menu) so it runs under the Steam Input layer.
+Make sure you launch Boosteroid SteamOS from Steam (not directly from the app menu) so it runs under the Steam Input layer.
 
 ---
 
@@ -233,7 +233,7 @@ Boosteroid offers a Linux `.deb` / AUR package, but getting it to run on Steam D
 - SteamOS has a **read-only filesystem** — you cannot install `.deb` or AUR packages the normal way
 - The binary requires `libnuma.so.1`, a library missing from the Steam Deck environment
 - There is no official Flatpak, no Snap, no AppImage — nothing that works out of the box
-- Workarounds involve switching to Desktop Mode, installing third-party package managers, fighting with filesystem permissions, or running scripts blindly from the internet
+- Workarounds involve switching to Desktop Mode, installing third-party package managers, fighting with filesystem permissions, using webbrowser which is messy or running scripts blindly from the internet
 
 The Steam Deck has existed since 2022. In over three years they have not shipped a package format that works on SteamOS. This project exists because they didn't.
 

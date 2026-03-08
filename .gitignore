@@ -4,4 +4,4 @@ repo/
 *.flatpak
 __pycache__/
 *.pyc
-CLAUDE.md
+CL*

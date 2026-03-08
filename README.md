@@ -40,9 +40,9 @@ Click the **Install** button at the top of this page. The file `boosteroid-steam
 
 Open **Dolphin** (the file manager) and go to your **Downloads** folder.
 
-Double click `boosteroid-steamos.desktop` → **Allow Executing**
+Double click `boosteroid-steamos.desktop` → **Launch**  → **Continue**
 
-A terminal window opens and installs everything automatically.
+A terminal window opens and installs everything automatically. 
 
 ### 🎮 Step 4 — Return to Game Mode
 

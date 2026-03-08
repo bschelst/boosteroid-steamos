@@ -93,7 +93,7 @@ window {
     border: 1px solid rgba(27, 159, 255, 0.18);
 }
 
-#step-done { color: rgba(79, 195, 247, 0.35); font-size: 11px; }
+#step-done { color: rgba(79, 195, 247, 0.65); font-size: 11px; }
 
 #status { color: #4fc3f7; font-size: 13px; }
 #status.warning { color: #ff9800; font-weight: bold; font-size: 14px; }
@@ -288,7 +288,7 @@ class SplashScreen:
     def _add_history_step(self, _text):
         """Reveal the next history label by restoring its opacity (no layout change)."""
         if self._history_index < len(self._history_labels):
-            self._history_labels[self._history_index].set_opacity(0.35)
+            self._history_labels[self._history_index].set_opacity(1.0)
             self._history_index += 1
 
     # ── launcher status file polling ──────────────────────────────────────

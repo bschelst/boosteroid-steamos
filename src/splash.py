@@ -304,6 +304,11 @@ class SplashScreen:
         except FileNotFoundError:
             if self._launcher_waiting:
                 self._launcher_waiting = False
+                # Restore the current step label (was overridden by "⏳ Waiting..." text)
+                # and extend max_time so the countdown display works correctly.
+                self.status_label.set_text(self._last_step + DOTS[self._dot_phase])
+                self.status_label.set_opacity(1.0)
+                self.max_time = self.elapsed + 3.0
                 if self._close_tid is not None:
                     GLib.source_remove(self._close_tid)
                 self._close_tid = GLib.timeout_add(3000, self._close)
@@ -440,7 +445,10 @@ class SplashScreen:
             self._step_fade = min(1.0, self._step_fade + 0.18)
             self.status_label.set_opacity(self._step_fade)
 
-        return self._launcher_waiting or self.elapsed < self.max_time
+        # Always return True — close is driven exclusively by _close_tid.
+        # Returning False here would freeze the display if elapsed > max_time
+        # while the launcher-wait state kept the splash alive past max_time.
+        return True
 
     # ── close / signal ────────────────────────────────────────────────────
 

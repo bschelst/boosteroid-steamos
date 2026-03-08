@@ -7,6 +7,12 @@ FLATPAK_URL="https://github.com/bschelst/boosteroid-steamos/releases/latest/down
 FLATHUB_REPO="https://flathub.org/repo/flathub.flatpakrepo"
 TMP_FLATPAK="$(mktemp /tmp/boosteroid-XXXXXX.flatpak)"
 
+# Detect release version via the redirect Location header (no download needed).
+RELEASE_TAG=$(curl -fsI "$FLATPAK_URL" 2>/dev/null \
+    | grep -i '^location:' \
+    | sed 's|.*/download/\([^/]*\)/.*|\1|' \
+    | tr -d '\r\n') || RELEASE_TAG=""
+
 cleanup() { rm -f "$TMP_FLATPAK"; }
 trap cleanup EXIT
 
@@ -44,7 +50,7 @@ step "Ensuring Flathub remote is configured..."
 flatpak remote-add --user --if-not-exists flathub "$FLATHUB_REPO"
 ok "Flathub ready"
 
-step "Downloading Boosteroid Flatpak..."
+step "Downloading Boosteroid Flatpak${RELEASE_TAG:+ (${RELEASE_TAG})}..."
 curl -L --progress-bar -o "$TMP_FLATPAK" "$FLATPAK_URL"
 ok "Download complete"
 
@@ -53,7 +59,7 @@ if ! FLATPAK_OUT=$(TERM=dumb flatpak install --user -y "$TMP_FLATPAK" 2>&1); the
     printf "%s\n" "$FLATPAK_OUT"
     exit 1
 fi
-ok "Flatpak installed"
+ok "Flatpak installed${RELEASE_TAG:+ — ${RELEASE_TAG}}"
 
 step "Adding Boosteroid to your Steam library..."
 flatpak run --command=python3 org.schelstraete.boosteroid \

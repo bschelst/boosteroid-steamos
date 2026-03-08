@@ -252,7 +252,18 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
                 )
                 if r.returncode == 0:
                     log("OpenFile: Game Mode — launching org.kde.index")
-                    subprocess.Popen(["flatpak-spawn", "--host", "flatpak", "run", "org.kde.index", path])
+                    # Force Wayland platform plugin — Index defaults to xcb (X11)
+                    # which has no display in Game Mode. Forward the Wayland socket
+                    # and runtime dir from our Flatpak environment.
+                    wayland = os.environ.get("WAYLAND_DISPLAY", "")
+                    xdg_rt = os.environ.get("XDG_RUNTIME_DIR", "")
+                    subprocess.Popen([
+                        "flatpak-spawn", "--host", "flatpak", "run",
+                        "--env=QT_QPA_PLATFORM=wayland",
+                        f"--env=WAYLAND_DISPLAY={wayland}",
+                        f"--env=XDG_RUNTIME_DIR={xdg_rt}",
+                        "org.kde.index", path,
+                    ])
                 else:
                     log("OpenFile: Game Mode — org.kde.index not installed, showing GTK hint")
                     GLib.idle_add(_show_index_hint)

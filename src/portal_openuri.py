@@ -44,15 +44,36 @@ except ImportError as e:
 
 
 def _play_file(filepath):
-    """Try to play a video file. Uses host mpv/vlc via flatpak-spawn --host."""
+    """Play a video using GStreamer within the Flatpak (display always accessible)."""
     log(f"play: {filepath}")
-    subprocess.Popen([
-        "flatpak-spawn", "--host", "bash", "-c",
-        'mpv --fullscreen "$1" 2>/dev/null'
-        ' || vlc --fullscreen "$1" 2>/dev/null'
-        ' || ffplay "$1" 2>/dev/null',
-        "--", filepath,
-    ])
+    try:
+        gi.require_version("Gst", "1.0")
+        from gi.repository import Gst
+        Gst.init(None)
+
+        player = Gst.ElementFactory.make("playbin", "player")
+        if player is None:
+            log("play: GStreamer playbin unavailable")
+            return
+
+        player.set_property("uri", GLib.filename_to_uri(filepath, None))
+        player.set_state(Gst.State.PLAYING)
+
+        bus = player.get_bus()
+        bus.add_signal_watch()
+
+        def on_message(_bus, msg):
+            if msg.type == Gst.MessageType.ERROR:
+                err, dbg = msg.parse_error()
+                log(f"play error: {err} — {dbg}")
+                player.set_state(Gst.State.NULL)
+            elif msg.type == Gst.MessageType.EOS:
+                log("play: done")
+                player.set_state(Gst.State.NULL)
+
+        bus.connect("message", on_message)
+    except Exception as exc:
+        log(f"play exception: {exc}")
 
 
 def _open_clips_browser(path):

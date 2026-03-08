@@ -24,6 +24,7 @@ trap 'echo "==> Startup: SIGTERM received, continuing"' TERM
 
 # ── Debug log (check ~/logs/boosteroid.log from Desktop Mode after launch) ───
 mkdir -p "$HOME/logs"
+mkdir -p "$HOME/Videos/BoosteroidClips"
 LOG=$HOME/logs/boosteroid.log
 > "$LOG"
 exec > >(tee -a "$LOG") 2>&1

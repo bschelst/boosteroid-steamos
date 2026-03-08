@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """
 Splash screen for Boosteroid SteamOS (unofficial).
-
-Shows a loading progress bar, checks internet connectivity in the background,
-and warns the user if Boosteroid is unreachable. Auto-closes after MAX_SECONDS,
-or after WARN_EXTRA_SECONDS extra time when a connectivity warning is shown.
-Exits cleanly on SIGTERM when the launcher is ready.
 """
 
 import sys
@@ -13,30 +8,33 @@ import os
 import socket
 import threading
 
-# Force X11 backend — Gamescope provides XWayland on $DISPLAY.
-# Without this, GTK may try to use GAMESCOPE_WAYLAND_DISPLAY as a Wayland
-# socket, fail to connect, and hang silently.
 os.environ.setdefault("GDK_BACKEND", "x11")
 
-print("[splash] starting", file=sys.stderr, flush=True)
+def _log(msg):
+    print(f"[splash] {msg}", file=sys.stderr, flush=True)
+
+_log("starting")
 
 try:
+    _log("importing gi")
     import gi
+    _log("gi imported")
     gi.require_version('Gtk', '3.0')
+    _log("requiring Gtk 3.0")
     from gi.repository import Gtk, GLib, Gdk
+    _log("Gtk imported")
 except Exception as e:
-    print(f"[splash] GTK unavailable, skipping: {e}", file=sys.stderr)
+    _log(f"GTK unavailable, skipping: {e}")
     sys.exit(0)
 
-MAX_SECONDS     = 5.0   # normal auto-close
-WARN_SECONDS    = 8.0   # auto-close when showing a connectivity warning
-TICK_MS         = 50    # 20 fps
+MAX_SECONDS  = 5.0
+WARN_SECONDS = 8.0
+TICK_MS      = 50
 
-CHECK_HOST      = "boosteroid.com"
-CHECK_PORT      = 443
-CHECK_TIMEOUT   = 3.0   # seconds
+CHECK_HOST    = "boosteroid.com"
+CHECK_PORT    = 443
+CHECK_TIMEOUT = 3.0
 
-# Timed status messages (elapsed seconds → label)
 STEPS = [
     (0.0,  "Loading…"),
     (0.4,  "Checking connection…"),
@@ -47,50 +45,16 @@ STEPS = [
 ]
 
 CSS = b"""
-window {
-    background-color: #16213e;
-}
-#accent {
-    background-color: #1b9fff;
-    min-height: 4px;
-}
-#title {
-    color: #ffffff;
-    font-size: 26px;
-    font-weight: bold;
-}
-#subtitle {
-    color: #3d5a80;
-    font-size: 11px;
-    letter-spacing: 3px;
-}
-#status {
-    color: #4fc3f7;
-    font-size: 12px;
-}
-#status.warning {
-    color: #ff9800;
-    font-weight: bold;
-    font-size: 13px;
-}
-progressbar trough {
-    background-color: #0f3460;
-    min-height: 5px;
-    border-radius: 3px;
-}
-progressbar progress {
-    background-color: #1b9fff;
-    min-height: 5px;
-    border-radius: 3px;
-}
-progressbar.warning trough {
-    background-color: #3a2a00;
-}
-progressbar.warning progress {
-    background-color: #ff9800;
-    min-height: 5px;
-    border-radius: 3px;
-}
+window { background-color: #16213e; }
+#accent { background-color: #1b9fff; min-height: 4px; }
+#title { color: #ffffff; font-size: 26px; font-weight: bold; }
+#subtitle { color: #3d5a80; font-size: 11px; letter-spacing: 3px; }
+#status { color: #4fc3f7; font-size: 12px; }
+#status.warning { color: #ff9800; font-weight: bold; font-size: 13px; }
+progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
+progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
+progressbar.warning trough { background-color: #3a2a00; }
+progressbar.warning progress { background-color: #ff9800; min-height: 5px; border-radius: 3px; }
 """
 
 
@@ -100,7 +64,7 @@ class SplashScreen:
         self.max_time = MAX_SECONDS
         self.warned   = False
 
-        # ── CSS ──────────────────────────────────────────────────────────────
+        _log("applying CSS")
         provider = Gtk.CssProvider()
         provider.load_from_data(CSS)
         Gtk.StyleContext.add_provider_for_screen(
@@ -109,7 +73,7 @@ class SplashScreen:
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-        # ── Window ───────────────────────────────────────────────────────────
+        _log("creating window")
         self.win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.win.set_title("Boosteroid SteamOS")
         self.win.set_decorated(False)
@@ -118,16 +82,18 @@ class SplashScreen:
         self.win.set_resizable(False)
         self.win.connect("destroy", Gtk.main_quit)
 
-        # ── Layout ───────────────────────────────────────────────────────────
+        # override_redirect: bypass the WM entirely (needed in Gamescope
+        # which has no traditional window manager)
+        self.win.realize()
+        self.win.get_window().set_override_redirect(True)
+
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.win.add(root)
 
-        # Blue accent bar at top
         accent = Gtk.Box()
         accent.set_name("accent")
         root.pack_start(accent, False, False, 0)
 
-        # Content area
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         content.set_margin_start(56)
         content.set_margin_end(56)
@@ -145,7 +111,6 @@ class SplashScreen:
         subtitle.set_halign(Gtk.Align.START)
         content.pack_start(subtitle, False, False, 8)
 
-        # Spacer pushes status/bar to bottom
         content.pack_start(Gtk.Box(), True, True, 0)
 
         self.status_label = Gtk.Label(label=STEPS[0][1])
@@ -157,18 +122,16 @@ class SplashScreen:
         self.bar.set_fraction(0.0)
         content.pack_start(self.bar, False, False, 0)
 
-        # ── Timers / signals ─────────────────────────────────────────────────
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, 15, self._on_sigterm)
         GLib.timeout_add(TICK_MS, self._tick)
         GLib.timeout_add(int(self.max_time * 1000), self._close)
 
+        _log("showing window")
         self.win.show_all()
+        _log("window visible")
 
-        # ── Internet check (background thread) ───────────────────────────────
         t = threading.Thread(target=self._check_internet, daemon=True)
         t.start()
-
-    # ── Internet check ────────────────────────────────────────────────────────
 
     def _check_internet(self):
         try:
@@ -185,12 +148,9 @@ class SplashScreen:
             self.status_label.set_text("⚠  No internet connection — Boosteroid may not work")
             self.status_label.get_style_context().add_class("warning")
             self.bar.get_style_context().add_class("warning")
-            # Extend auto-close to give the user time to read the warning
             self.max_time = WARN_SECONDS
             GLib.timeout_add(int(WARN_SECONDS * 1000), self._close)
-        return False  # remove idle callback
-
-    # ── Progress animation ────────────────────────────────────────────────────
+        return False
 
     def _tick(self):
         self.elapsed += TICK_MS / 1000.0
@@ -202,8 +162,6 @@ class SplashScreen:
                     break
         return self.elapsed < self.max_time
 
-    # ── Close / signal ────────────────────────────────────────────────────────
-
     def _close(self):
         self.win.destroy()
         return False
@@ -214,15 +172,19 @@ class SplashScreen:
 
 
 def main():
+    _log("calling Gtk.init_check")
     try:
         if not Gtk.init_check([])[0]:
-            raise RuntimeError("Gtk.init_check failed")
+            raise RuntimeError("Gtk.init_check returned False")
     except Exception as e:
-        print(f"[splash] cannot initialise GTK: {e}", file=sys.stderr)
+        _log(f"cannot initialise GTK: {e}")
         sys.exit(0)
+    _log("GTK initialised")
 
     SplashScreen()
+    _log("entering Gtk.main()")
     Gtk.main()
+    _log("Gtk.main() returned")
     sys.exit(0)
 
 

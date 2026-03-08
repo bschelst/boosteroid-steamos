@@ -2,6 +2,10 @@
 """
 Fake org.freedesktop.portal.OpenURI service using gi.repository.Gio.
 
+Author: Schelstraete Bart
+        https://github.com/bschelst/boosteroid-steamos
+        https://www.schelstraete.org
+
 Qt5 inside a Flatpak calls org.freedesktop.portal.Desktop.OpenURI via D-Bus
 instead of xdg-open, bypassing any PATH-based wrapper.  By claiming
 org.freedesktop.portal.Desktop on the sandbox proxy bus before Boosteroid

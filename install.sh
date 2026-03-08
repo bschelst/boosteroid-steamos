@@ -1,6 +1,10 @@
 #!/bin/bash
 # One-click installer for Boosteroid (unofficial) Flatpak on Steam Deck / SteamOS.
 # Usage: bash install.sh
+#
+# Author: Schelstraete Bart
+#         https://github.com/bschelst/boosteroid-steamos
+#         https://www.schelstraete.org
 set -euo pipefail
 
 FLATPAK_URL="https://github.com/bschelst/boosteroid-steamos/releases/latest/download/org.schelstraete.boosteroid.flatpak"

@@ -2,6 +2,10 @@
 """
 First-run installer: downloads the official Boosteroid .deb from boosteroid.com
 and extracts it into $XDG_DATA_HOME/boosteroid/ using Python stdlib only.
+
+Author: Schelstraete Bart
+        https://github.com/bschelst/boosteroid-steamos
+        https://www.schelstraete.org
 """
 
 import hashlib

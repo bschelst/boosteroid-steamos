@@ -96,27 +96,35 @@ chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"
 
 # ── Wait for any previous Boosteroid instance to exit ────────────────────────
-# Detection (both checked):
-#   1. STATUS_FILE fresh (< 60 s) — written by THIS launcher before Boosteroid
-#      starts and removed on clean exit.  Most reliable indicator.
-#   2. flatpak-spawn pgrep fallback — catches cases where STATUS_FILE is absent
-#      (e.g. first launch after upgrade, or if file was removed externally).
+# Detection strategy:
+#   1. STATUS_FILE contains the numeric PID written by the previous launcher.
+#      Check /proc/$pid/comm for "boosteroid" — instant and reliable even if
+#      the previous launcher was killed before cleanup (SIGKILL).
+#   2. pgrep fallback — used when STATUS_FILE is absent or has non-PID content
+#      (first launch, old-format file, etc.).
 _wait_for_boosteroid_close() {
-    local _should_wait=0
+    local _pid="" _should_wait=0
 
     if [ -f "${STATUS_FILE}" ]; then
-        local _age
-        _age=$(( $(date +%s) - $(stat -c %Y "${STATUS_FILE}" 2>/dev/null || echo 0) ))
-        if [ "${_age}" -lt 30 ]; then
-            echo "==> STATUS_FILE found (age ${_age}s) — Boosteroid may still be running"
-            _should_wait=1
+        local _content
+        _content=$(cat "${STATUS_FILE}" 2>/dev/null || true)
+        if [[ "${_content}" =~ ^[0-9]+$ ]]; then
+            _pid="${_content}"
+            if [ -d "/proc/${_pid}" ] && grep -qi "boosteroid" "/proc/${_pid}/comm" 2>/dev/null; then
+                echo "==> STATUS_FILE: PID ${_pid} still running (Boosteroid confirmed)"
+                _should_wait=1
+            else
+                echo "==> STATUS_FILE: PID ${_pid} is gone, clearing"
+                rm -f "${STATUS_FILE}"
+            fi
         else
-            echo "==> STATUS_FILE is stale (age ${_age}s), clearing"
+            # Legacy/transitional content — fall back to pgrep
+            echo "==> STATUS_FILE has non-PID content, falling back to pgrep"
             rm -f "${STATUS_FILE}"
+            flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1 \
+                && _should_wait=1 || true
         fi
-    fi
-
-    if [ "${_should_wait}" -eq 0 ]; then
+    else
         flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1 \
             && _should_wait=1 || true
     fi
@@ -125,7 +133,15 @@ _wait_for_boosteroid_close() {
 
     echo "==> Previous Boosteroid instance still running, waiting..."
     local max_attempts=3 wait_secs=3 i=1
-    while flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; do
+    while true; do
+        local _still_running=0
+        if [ -n "${_pid}" ] && [ -d "/proc/${_pid}" ] && grep -qi "boosteroid" "/proc/${_pid}/comm" 2>/dev/null; then
+            _still_running=1
+        elif flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; then
+            _still_running=1
+        fi
+        [ "${_still_running}" -eq 1 ] || break
+
         if [ "$i" -gt "$max_attempts" ]; then
             echo "warn:Previous Boosteroid still running after ${max_attempts} retries — launching anyway" \
                 > "${STATUS_FILE}"
@@ -175,21 +191,28 @@ fi
 # Restore default SIGTERM now that startup is complete.
 trap - TERM
 
-# Mark Boosteroid as running so the NEXT launcher detects it via STATUS_FILE.
-# Removed after Boosteroid exits (both paths below).
-echo "boosteroid_running" > "${STATUS_FILE}"
-
 # ── Filter debug output unless DEBUG=1 ──────────────────────────────────────
 # By default [debug] lines from Boosteroid are stripped from the log.
 # To keep them, add --env=DEBUG=1 to Steam launch options:
 #   run --env=DEBUG=1 org.schelstraete.boosteroid
+#
+# Run Boosteroid in the background so we can capture its PID and write it to
+# STATUS_FILE.  The next launcher reads that PID and checks /proc/$pid/comm —
+# no age heuristic, works correctly even if this launcher is SIGKILL'd.
 # shellcheck disable=SC2086
 if [ "${DEBUG:-0}" = "1" ]; then
     echo "==> Debug mode ON: [debug] lines will appear in log"
-    "${BINARY}" ${DECODE_FLAG} "$@" || true
+    "${BINARY}" ${DECODE_FLAG} "$@" &
 else
-    "${BINARY}" ${DECODE_FLAG} "$@" 2>&1 | grep --line-buffered -v '\[debug\]' || true
+    # Process substitution keeps $! as Boosteroid's PID (not grep's).
+    "${BINARY}" ${DECODE_FLAG} "$@" > >(grep --line-buffered -v '\[debug\]') 2>&1 &
 fi
+BOOSTEROID_PID=$!
+echo "${BOOSTEROID_PID}" > "${STATUS_FILE}"
+echo "==> Boosteroid started (PID ${BOOSTEROID_PID})"
+
+wait "${BOOSTEROID_PID}" || true
 
 # Remove the running indicator now that Boosteroid has exited.
 rm -f "${STATUS_FILE}"
+echo "==> Boosteroid exited, STATUS_FILE removed"

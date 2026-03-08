@@ -44,8 +44,9 @@ LOGO_WIDTH = 800
 
 # (elapsed_seconds, icon, label) -- no trailing dots; animated separately
 STEPS = [
-    (0.0, "\U0001f310", "Testing internet connection"),
-    (1.5, "\U0001f3ae", "Setting up controller layout"),
+    (0.0, "\U0001f9f9", "Clearing session logs"),
+    (0.6, "\U0001f310", "Testing internet connection"),
+    (1.8, "\U0001f3ae", "Setting up controller layout"),
     (3.0, "\U0001f3ac", "Configuring video decoder"),
     (4.0, "\U0001f680", "Starting Boosteroid"),
     (4.7, "\u26a1",     "Launching"),
@@ -97,7 +98,7 @@ window {
 #countdown { color: rgba(27, 159, 255, 0.50); font-size: 11px; }
 #countdown.warning { color: rgba(255, 152, 0, 0.60); }
 
-#version { color: rgba(27, 159, 255, 0.40); font-size: 10px; }
+#version { color: rgba(27, 159, 255, 0.50); font-size: 11px; }
 
 progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
@@ -149,13 +150,6 @@ class SplashScreen:
         accent = Gtk.Box()
         accent.set_name("accent")
         root.pack_start(accent, False, False, 0)
-
-        # ── version label pinned to bottom ────────────────────────────────
-        version = self._read_version()
-        if version:
-            ver_label = Gtk.Label(label=f"v{version}  \u00b7  unofficial")
-            ver_label.set_name("version")
-            root.pack_end(ver_label, False, False, 14)
 
         # ── top spacer ────────────────────────────────────────────────────
         root.pack_start(Gtk.Box(), True, True, 0)
@@ -244,6 +238,13 @@ class SplashScreen:
         # ── bottom spacer ─────────────────────────────────────────────────
         root.pack_start(Gtk.Box(), True, True, 0)
 
+        # ── version label pinned to bottom ────────────────────────────────
+        version = self._read_version()
+        if version:
+            ver_label = Gtk.Label(label=f"v{version}  \u00b7  unofficial")
+            ver_label.set_name("version")
+            root.pack_start(ver_label, False, False, 12)
+
         # ── timers ────────────────────────────────────────────────────────
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, 15, self._on_sigterm)
         GLib.timeout_add(TICK_MS, self._tick)
@@ -261,7 +262,7 @@ class SplashScreen:
     def _read_version(self):
         try:
             with open("/app/share/boosteroid/version") as f:
-                return f.read().strip()
+                return f.read().strip().lstrip("v")
         except Exception:
             return ""
 

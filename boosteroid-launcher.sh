@@ -100,8 +100,10 @@ export PATH="${_OVERRIDE_BIN}:${PATH}"
 #   1. STATUS_FILE contains the numeric PID written by the previous launcher.
 #      Check /proc/$pid/comm for "boosteroid" — instant and reliable even if
 #      the previous launcher was killed before cleanup (SIGKILL).
-#   2. pgrep fallback — used when STATUS_FILE is absent or has non-PID content
-#      (first launch, old-format file, etc.).
+#   2. Non-PID / absent STATUS_FILE = stale file from old version or crashed
+#      session.  Kill any orphaned pgrep matches immediately and proceed —
+#      do NOT enter the retry loop.  This avoids the warn: state that caused
+#      the splash to close before Boosteroid launched.
 _wait_for_boosteroid_close() {
     local _pid="" _should_wait=0
 
@@ -118,36 +120,28 @@ _wait_for_boosteroid_close() {
                 rm -f "${STATUS_FILE}"
             fi
         else
-            # Legacy/transitional content — fall back to pgrep
-            echo "==> STATUS_FILE has non-PID content, falling back to pgrep"
+            # Non-PID content = stale file from old version or crashed session.
+            # Kill any lingering processes and proceed — never retry stale state.
+            echo "==> STATUS_FILE has stale content (${_content:0:20}...), killing orphaned processes"
             rm -f "${STATUS_FILE}"
-            flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1 \
-                && _should_wait=1 || true
+            flatpak-spawn --host pkill -f "BoosteroidGamesS" 2>/dev/null || true
+            sleep 0.5
         fi
     else
-        flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1 \
-            && _should_wait=1 || true
+        # No STATUS_FILE.  Kill any orphaned processes left by a previous crash.
+        if flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; then
+            echo "==> No STATUS_FILE but orphaned Boosteroid found, killing"
+            flatpak-spawn --host pkill -f "BoosteroidGamesS" 2>/dev/null || true
+            sleep 0.5
+        fi
     fi
 
     [ "${_should_wait}" -eq 1 ] || return 0
 
-    echo "==> Previous Boosteroid instance still running, waiting..."
-    local max_attempts=3 wait_secs=3 i=1
-    while true; do
-        local _still_running=0
-        if [ -n "${_pid}" ] && [ -d "/proc/${_pid}" ] && grep -qi "boosteroid" "/proc/${_pid}/comm" 2>/dev/null; then
-            _still_running=1
-        elif flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; then
-            _still_running=1
-        fi
-        [ "${_still_running}" -eq 1 ] || break
-
-        if [ "$i" -gt "$max_attempts" ]; then
-            echo "warn:Previous Boosteroid still running after ${max_attempts} retries — launching anyway" \
-                > "${STATUS_FILE}"
-            echo "==> Warning: still running after ${max_attempts} attempts, launching anyway"
-            return 0
-        fi
+    # Wait for the PID-tracked instance to exit gracefully.
+    echo "==> Previous Boosteroid (PID ${_pid}) still running, waiting..."
+    local max_attempts=5 wait_secs=3 i=1
+    while [ "$i" -le "$max_attempts" ]; do
         echo "step:Waiting for previous Boosteroid to close (${i}/${max_attempts})..." \
             > "${STATUS_FILE}"
         echo "==> Attempt ${i}/${max_attempts}: still running, retrying in ${wait_secs}s..."
@@ -156,10 +150,19 @@ _wait_for_boosteroid_close() {
             rm -f "${STATUS_FILE}"
             return 0
         }
+        if ! { [ -d "/proc/${_pid}" ] && grep -qi "boosteroid" "/proc/${_pid}/comm" 2>/dev/null; }; then
+            rm -f "${STATUS_FILE}"
+            echo "==> Previous instance exited OK"
+            return 0
+        fi
         i=$((i + 1))
     done
+
+    # Still running after waiting — force-kill and proceed.
+    echo "==> Force-killing previous Boosteroid (PID ${_pid}) after ${max_attempts} attempts"
+    flatpak-spawn --host kill -9 "${_pid}" 2>/dev/null || true
+    sleep 0.5
     rm -f "${STATUS_FILE}"
-    echo "==> Previous instance exited OK"
 }
 _wait_for_boosteroid_close
 

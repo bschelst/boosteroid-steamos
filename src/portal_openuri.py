@@ -79,7 +79,7 @@ def _play_file(filepath):
 def _open_clips_browser(path):
     """GTK file chooser opened from within the Flatpak — works in Game Mode."""
     try:
-        dialog = Gtk.FileChooserDialog(title="Boosteroid Clips")
+        dialog = Gtk.FileChooserDialog(title="Boosteroid SteamOS Clips")
         dialog.set_action(Gtk.FileChooserAction.OPEN)
         dialog.set_current_folder(path)
         dialog.set_default_size(900, 600)
@@ -87,7 +87,7 @@ def _open_clips_browser(path):
         # Gamescope doesn't add window decorations — provide our own header bar
         # with a close button so the user can dismiss the dialog.
         header = Gtk.HeaderBar()
-        header.set_title("Boosteroid Clips")
+        header.set_title("Boosteroid SteamOS Clips")
         header.set_show_close_button(True)
         dialog.set_titlebar(header)
 

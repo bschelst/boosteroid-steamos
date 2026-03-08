@@ -43,6 +43,27 @@ except ImportError as e:
     sys.exit(0)
 
 
+def _open_clips_browser(path):
+    """GTK file chooser opened from within the Flatpak — works in Game Mode."""
+    try:
+        dialog = Gtk.FileChooserDialog(title="Boosteroid Clips")
+        dialog.set_action(Gtk.FileChooserAction.OPEN)
+        dialog.set_current_folder(path)
+        dialog.set_default_size(900, 600)
+
+        filt = Gtk.FileFilter()
+        filt.set_name("Video files")
+        filt.add_mime_type("video/*")
+        dialog.add_filter(filt)
+
+        dialog.add_button("Close", Gtk.ResponseType.CANCEL)
+        dialog.show_all()
+        dialog.connect("response", lambda d, _: d.destroy())
+    except Exception as exc:
+        log(f"clips browser error: {exc}")
+    return False
+
+
 _CSS = b"""
 window {
     background-color: #1b1b2e;
@@ -244,29 +265,12 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             os.close(fd)
             log(f"OpenFile: {path}")
             if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY"):
-                # Game Mode: prefer org.kde.index (touch-friendly Flatpak).
-                # If not installed, show a hint via kdialog/zenity.
-                r = subprocess.run(
-                    ["flatpak-spawn", "--host", "flatpak", "info", "org.kde.index"],
-                    capture_output=True,
-                )
-                if r.returncode == 0:
-                    log("OpenFile: Game Mode — launching org.kde.index")
-                    # Force Wayland platform plugin — Index defaults to xcb (X11)
-                    # which has no display in Game Mode. Forward the Wayland socket
-                    # and runtime dir from our Flatpak environment.
-                    wayland = os.environ.get("WAYLAND_DISPLAY", "")
-                    xdg_rt = os.environ.get("XDG_RUNTIME_DIR", "")
-                    subprocess.Popen([
-                        "flatpak-spawn", "--host", "flatpak", "run",
-                        "--env=QT_QPA_PLATFORM=wayland",
-                        f"--env=WAYLAND_DISPLAY={wayland}",
-                        f"--env=XDG_RUNTIME_DIR={xdg_rt}",
-                        "org.kde.index", path,
-                    ])
-                else:
-                    log("OpenFile: Game Mode — org.kde.index not installed, showing GTK hint")
-                    GLib.idle_add(_show_index_hint)
+                # Game Mode: external apps can't connect to Gamescope's Wayland
+                # socket when spawned via flatpak-spawn --host (Connection refused).
+                # Show a GTK file chooser from within our own Flatpak instead —
+                # we already have display access since we're running inside Gamescope.
+                log("OpenFile: Game Mode — showing GTK file browser")
+                GLib.idle_add(lambda: _open_clips_browser(path))
             else:
                 # Desktop Mode: use the system file manager directly.
                 log("OpenFile: Desktop Mode — opening with dolphin/nautilus")

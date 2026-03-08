@@ -49,7 +49,10 @@ curl -L --progress-bar -o "$TMP_FLATPAK" "$FLATPAK_URL"
 ok "Download complete"
 
 step "Installing (this may take a minute on first run)..."
-flatpak install --user -y "$TMP_FLATPAK"
+if ! FLATPAK_OUT=$(TERM=dumb flatpak install --user -y "$TMP_FLATPAK" 2>&1); then
+    printf "%s\n" "$FLATPAK_OUT"
+    exit 1
+fi
 ok "Flatpak installed"
 
 step "Adding Boosteroid to your Steam library..."

@@ -13,7 +13,8 @@ RELEASE_TAG=$(curl -fsI "$FLATPAK_URL" 2>/dev/null \
     | sed 's|.*/download/\([^/]*\)/.*|\1|' \
     | tr -d '\r\n') || RELEASE_TAG=""
 
-cleanup() { rm -f "$TMP_FLATPAK"; }
+_PROG_PIPE=""
+cleanup() { rm -f "$TMP_FLATPAK" "${_PROG_PIPE:-}"; }
 trap cleanup EXIT
 
 # ── ANSI colours ─────────────────────────────────────────────────────────────
@@ -51,7 +52,19 @@ flatpak remote-add --user --if-not-exists flathub "$FLATHUB_REPO"
 ok "Flathub ready"
 
 step "Downloading Boosteroid Flatpak${RELEASE_TAG:+ (${RELEASE_TAG})}..."
-curl -L --progress-bar -o "$TMP_FLATPAK" "$FLATPAK_URL"
+# Indent the progress bar to match the 2-space prefix used by step()/ok().
+# curl --progress-bar writes \r-delimited updates to stderr; awk splits on \r
+# and re-emits each update preceded by "\r  " so the bar is visually aligned.
+# Named FIFO + explicit wait ensures "Download complete" prints only after the
+# final bar line is flushed (process-substitution timing is not reliable here).
+_PROG_PIPE=$(mktemp -u /tmp/.boosteroid-dl-XXXXXX)
+mkfifo "$_PROG_PIPE"
+awk 'BEGIN{RS="\r";ORS=""}{printf "\r  %s",$0;fflush()}' < "$_PROG_PIPE" >&2 &
+_PROG_PID=$!
+curl -L --progress-bar -o "$TMP_FLATPAK" "$FLATPAK_URL" 2>"$_PROG_PIPE"
+wait "$_PROG_PID" 2>/dev/null || true
+printf "\n" >&2
+rm -f "$_PROG_PIPE"; _PROG_PIPE=""
 ok "Download complete"
 
 step "Installing (this may take a minute on first run)..."

@@ -84,6 +84,13 @@ def _open_clips_browser(path):
         dialog.set_current_folder(path)
         dialog.set_default_size(900, 600)
 
+        # Gamescope doesn't add window decorations — provide our own header bar
+        # with a close button so the user can dismiss the dialog.
+        header = Gtk.HeaderBar()
+        header.set_title("Boosteroid Clips")
+        header.set_show_close_button(True)
+        dialog.set_titlebar(header)
+
         filt = Gtk.FileFilter()
         filt.set_name("Video files")
         filt.add_mime_type("video/*")

@@ -2,9 +2,9 @@
 Name=Install Boosteroid SteamOS (unofficial)
 GenericName=Flatpak Installer
 Comment=Download and install Boosteroid cloud gaming for Steam Deck
-Exec=bash -c "curl -fsSL -o /tmp/boosteroid-install.sh https://github.com/bschelst/boosteroid-steamos/releases/latest/download/install.sh && bash /tmp/boosteroid-install.sh; rm -f /tmp/boosteroid-install.sh"
+Exec=bash -c "curl -fsSL https://github.com/bschelst/boosteroid-steamos/releases/latest/download/install.sh -o /tmp/boosteroid-install.sh; konsole -e bash /tmp/boosteroid-install.sh 2>/dev/null || ptyxis -- bash /tmp/boosteroid-install.sh 2>/dev/null || gnome-terminal --wait -- bash /tmp/boosteroid-install.sh 2>/dev/null || xterm -e bash /tmp/boosteroid-install.sh; rm -f /tmp/boosteroid-install.sh"
 Icon=system-software-install
-Terminal=true
+Terminal=false
 Type=Application
 Categories=Game;
 Keywords=boosteroid;schelstraete;cloud;gaming;

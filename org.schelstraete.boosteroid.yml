@@ -46,7 +46,7 @@ modules:
   - name: python3-pygobject
     buildsystem: meson
     config-opts:
-      - -Dpycairo=false
+      - -Dpycairo=disabled
     sources:
       - type: archive
         url: https://download.gnome.org/sources/pygobject/3.50/pygobject-3.50.2.tar.gz

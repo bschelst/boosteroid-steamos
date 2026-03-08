@@ -21,36 +21,36 @@ try:
     _log("gi imported")
     gi.require_version('Gtk', '3.0')
     _log("requiring Gtk 3.0")
-    from gi.repository import Gtk, GLib, Gdk
+    from gi.repository import Gtk, GLib, Gdk, GdkPixbuf
     _log("Gtk imported")
 except Exception as e:
     _log(f"GTK unavailable, skipping: {e}")
     sys.exit(0)
 
 MAX_SECONDS  = 10.0
-WARN_SECONDS = 8.0
+WARN_SECONDS = MAX_SECONDS + 4.0
 TICK_MS      = 50
 
 CHECK_HOST    = "boosteroid.com"
 CHECK_PORT    = 443
 CHECK_TIMEOUT = 3.0
 
+LOGO_PATH  = "/app/share/boosteroid/grid/wide.png"
+LOGO_WIDTH = 800   # scaled width; height is derived from aspect ratio
+
 STEPS = [
-    (0.0,  "Loading…"),
-    (0.4,  "Checking connection…"),
-    (1.4,  "Setting up controller layout…"),
-    (2.6,  "Configuring video decoder…"),
-    (3.8,  "Starting Boosteroid…"),
-    (4.6,  "Launching…"),
+    (0.0,  "Testing internet connection…"),
+    (3.5,  "Setting up controller layout…"),
+    (6.0,  "Configuring video decoder…"),
+    (8.0,  "Starting Boosteroid…"),
+    (9.2,  "Launching…"),
 ]
 
 CSS = b"""
 window { background-color: #16213e; }
 #accent { background-color: #1b9fff; min-height: 4px; }
-#title { color: #ffffff; font-size: 26px; font-weight: bold; }
-#subtitle { color: #3d5a80; font-size: 11px; letter-spacing: 3px; }
-#status { color: #4fc3f7; font-size: 12px; }
-#status.warning { color: #ff9800; font-weight: bold; font-size: 13px; }
+#status { color: #4fc3f7; font-size: 13px; }
+#status.warning { color: #ff9800; font-weight: bold; font-size: 14px; }
 progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
 progressbar.warning trough { background-color: #3a2a00; }
@@ -87,33 +87,39 @@ class SplashScreen:
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.win.add(root)
 
+        # ── top accent bar ────────────────────────────────────────────────
         accent = Gtk.Box()
         accent.set_name("accent")
         root.pack_start(accent, False, False, 0)
 
-        # Centre a fixed-width content panel in the fullscreen window
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        root.pack_start(hbox, True, True, 0)
+        # ── top spacer (pushes content to vertical centre) ────────────────
+        root.pack_start(Gtk.Box(), True, True, 0)
 
-        hbox.pack_start(Gtk.Box(), True, True, 0)   # left spacer
+        # ── logo image (centred horizontally) ─────────────────────────────
+        logo_widget = self._make_logo()
+        if logo_widget:
+            logo_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            logo_hbox.pack_start(Gtk.Box(), True, True, 0)
+            logo_hbox.pack_start(logo_widget, False, False, 0)
+            logo_hbox.pack_start(Gtk.Box(), True, True, 0)
+            root.pack_start(logo_hbox, False, False, 0)
+
+        # ── gap between logo and status row ──────────────────────────────
+        gap = Gtk.Box()
+        gap.set_size_request(-1, 28)
+        root.pack_start(gap, False, False, 0)
+
+        # ── status label + progress bar (centred, 700 px wide) ───────────
+        bar_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        root.pack_start(bar_hbox, False, False, 0)
+
+        bar_hbox.pack_start(Gtk.Box(), True, True, 0)
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        content.set_size_request(620, -1)
-        hbox.pack_start(content, False, False, 0)
+        content.set_size_request(700, -1)
+        bar_hbox.pack_start(content, False, False, 0)
 
-        hbox.pack_start(Gtk.Box(), True, True, 0)   # right spacer
-
-        title = Gtk.Label(label="☁  Boosteroid SteamOS")
-        title.set_name("title")
-        title.set_halign(Gtk.Align.START)
-        content.pack_start(title, False, False, 0)
-
-        subtitle = Gtk.Label(label="UNOFFICIAL")
-        subtitle.set_name("subtitle")
-        subtitle.set_halign(Gtk.Align.START)
-        content.pack_start(subtitle, False, False, 8)
-
-        content.pack_start(Gtk.Box(), True, True, 0)
+        bar_hbox.pack_start(Gtk.Box(), True, True, 0)
 
         self.status_label = Gtk.Label(label=STEPS[0][1])
         self.status_label.set_name("status")
@@ -123,6 +129,9 @@ class SplashScreen:
         self.bar = Gtk.ProgressBar()
         self.bar.set_fraction(0.0)
         content.pack_start(self.bar, False, False, 0)
+
+        # ── bottom spacer ─────────────────────────────────────────────────
+        root.pack_start(Gtk.Box(), True, True, 0)
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, 15, self._on_sigterm)
         GLib.timeout_add(TICK_MS, self._tick)
@@ -135,9 +144,24 @@ class SplashScreen:
         t = threading.Thread(target=self._check_internet, daemon=True)
         t.start()
 
+    def _make_logo(self):
+        try:
+            pb_orig = GdkPixbuf.Pixbuf.new_from_file(LOGO_PATH)
+            orig_w  = pb_orig.get_width()
+            orig_h  = pb_orig.get_height()
+            new_h   = int(orig_h * LOGO_WIDTH / orig_w)
+            pb      = pb_orig.scale_simple(LOGO_WIDTH, new_h,
+                                           GdkPixbuf.InterpType.BILINEAR)
+            _log(f"logo loaded ({orig_w}x{orig_h} → {LOGO_WIDTH}x{new_h})")
+            return Gtk.Image.new_from_pixbuf(pb)
+        except Exception as e:
+            _log(f"logo not loaded: {e}")
+            return None
+
     def _check_internet(self):
         try:
-            sock = socket.create_connection((CHECK_HOST, CHECK_PORT), timeout=CHECK_TIMEOUT)
+            sock = socket.create_connection((CHECK_HOST, CHECK_PORT),
+                                            timeout=CHECK_TIMEOUT)
             sock.close()
             reachable = True
         except Exception:
@@ -147,7 +171,8 @@ class SplashScreen:
     def _on_internet_result(self, reachable):
         if not reachable and not self.warned:
             self.warned = True
-            self.status_label.set_text("⚠  No internet connection — Boosteroid may not work")
+            self.status_label.set_text(
+                "⚠  No internet connection — Boosteroid may not work")
             self.status_label.get_style_context().add_class("warning")
             self.bar.get_style_context().add_class("warning")
             self.max_time = WARN_SECONDS

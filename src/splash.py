@@ -103,16 +103,6 @@ progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
 progressbar.warning trough { background-color: #3a2a00; }
 progressbar.warning progress { background-color: #ff9800; min-height: 5px; border-radius: 3px; }
-
-#scanlines {
-    background: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        transparent 3px,
-        rgba(0, 0, 0, 0.04) 3px,
-        rgba(0, 0, 0, 0.04) 4px
-    );
-}
 """
 
 
@@ -132,6 +122,8 @@ class SplashScreen:
         self._dot_phase      = 0
         self._warn_pulse     = True   # alternates warning label opacity
         self._history_box    = None
+        self._history_labels = []     # pre-created; revealed on step advance
+        self._history_index  = 0
 
         _log("applying CSS")
         provider = Gtk.CssProvider()
@@ -150,21 +142,8 @@ class SplashScreen:
         self.win.connect("destroy", Gtk.main_quit)
         self.win.fullscreen()
 
-        # ── scanline overlay via Gtk.Overlay ──────────────────────────────
-        overlay = Gtk.Overlay()
-        self.win.add(overlay)
-
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        overlay.add(root)
-
-        scan = Gtk.EventBox()
-        scan.set_visible_window(True)
-        scan.set_name("scanlines")
-        overlay.add_overlay(scan)
-        try:
-            overlay.set_overlay_pass_through(scan, True)
-        except AttributeError:
-            pass  # GTK < 3.18 -- harmless for a splash
+        self.win.add(root)
 
         # ── top accent bar ────────────────────────────────────────────────
         accent = Gtk.Box()
@@ -221,9 +200,17 @@ class SplashScreen:
         content.set_margin_end(24)
         card.add(content)
 
-        # Completed step history (greyed-out labels above current step)
+        # Completed step history — labels pre-created hidden; revealed (not added)
+        # at runtime to avoid mid-animation layout thrash that causes Gamescope flashes.
         self._history_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         content.pack_start(self._history_box, False, False, 0)
+        for _, _, text in STEPS:
+            lbl = Gtk.Label(label=f"\u2713  {text}")
+            lbl.set_name("step-done")
+            lbl.set_halign(Gtk.Align.START)
+            lbl.set_no_show_all(True)   # excluded from show_all(); we reveal manually
+            self._history_box.pack_start(lbl, False, False, 0)
+            self._history_labels.append(lbl)
 
         # Status row: spinner + label
         status_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -292,13 +279,11 @@ class SplashScreen:
             _log(f"logo not loaded: {e}")
             return None
 
-    def _add_history_step(self, text):
-        """Append a completed-step label (checkmark + text) to the history box."""
-        lbl = Gtk.Label(label=f"\u2713  {text}")
-        lbl.set_name("step-done")
-        lbl.set_halign(Gtk.Align.START)
-        lbl.show()
-        self._history_box.pack_start(lbl, False, False, 0)
+    def _add_history_step(self, _text):
+        """Reveal the next pre-created history label (no widget creation at runtime)."""
+        if self._history_index < len(self._history_labels):
+            self._history_labels[self._history_index].show()
+            self._history_index += 1
 
     # ── glow heartbeat + warning pulse ────────────────────────────────────
 

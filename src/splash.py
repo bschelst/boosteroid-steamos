@@ -27,31 +27,43 @@ except Exception as e:
     _log(f"GTK unavailable, skipping: {e}")
     sys.exit(0)
 
-MAX_SECONDS  = 10.0
-WARN_SECONDS = MAX_SECONDS + 4.0
+MAX_SECONDS  = 5.0    # internet OK  → close after 5 s
+WARN_SECONDS = 10.0   # no internet  → close after 10 s
 TICK_MS      = 50
 
-# Use a raw IP to bypass DNS — when internet is down, DNS resolution can
-# hang far longer than any socket timeout, causing the check to return only
-# after the splash is gone.  Cloudflare 1.1.1.1:53 is a reliable target.
+# Raw IP — bypasses DNS so the check fails immediately when offline.
+# (DNS resolution ignores socket timeouts and can hang for 30+ seconds.)
 CHECK_HOST    = "1.1.1.1"
 CHECK_PORT    = 53
 CHECK_TIMEOUT = 3.0
 
 LOGO_PATH  = "/app/share/boosteroid/grid/wide.png"
-LOGO_WIDTH = 800   # scaled width; height is derived from aspect ratio
+LOGO_WIDTH = 800   # scaled width; height derived from aspect ratio
 
 STEPS = [
     (0.0,  "Testing internet connection…"),
-    (3.5,  "Setting up controller layout…"),
-    (6.0,  "Configuring video decoder…"),
-    (8.0,  "Starting Boosteroid…"),
-    (9.2,  "Launching…"),
+    (1.5,  "Setting up controller layout…"),
+    (3.0,  "Configuring video decoder…"),
+    (4.0,  "Starting Boosteroid…"),
+    (4.7,  "Launching…"),
 ]
 
 CSS = b"""
 window { background-color: #16213e; }
 #accent { background-color: #1b9fff; min-height: 4px; }
+
+/* Glowing border around the logo */
+#logo-frame {
+    border-radius: 8px;
+    border: 1px solid #1b9fff;
+    padding: 4px;
+    box-shadow:
+        0 0  8px #1b9fff,
+        0 0 20px rgba(27, 159, 255, 0.6),
+        0 0 40px rgba(27, 159, 255, 0.3),
+        0 0 60px rgba(27, 159, 255, 0.1);
+}
+
 #status { color: #4fc3f7; font-size: 13px; }
 #status.warning { color: #ff9800; font-weight: bold; font-size: 14px; }
 progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
@@ -63,9 +75,10 @@ progressbar.warning progress { background-color: #ff9800; min-height: 5px; borde
 
 class SplashScreen:
     def __init__(self):
-        self.elapsed  = 0.0
-        self.max_time = MAX_SECONDS
-        self.warned   = False
+        self.elapsed       = 0.0
+        self.max_time      = MAX_SECONDS
+        self.warned        = False
+        self._close_tid    = None   # GLib timeout source ID for the close timer
 
         _log("applying CSS")
         provider = Gtk.CssProvider()
@@ -84,7 +97,6 @@ class SplashScreen:
         self.win.connect("destroy", Gtk.main_quit)
 
         # Gamescope (Game Mode) only composites fullscreen X11 windows.
-        # Request fullscreen before show_all() so it is set when the window maps.
         self.win.fullscreen()
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -98,19 +110,22 @@ class SplashScreen:
         # ── top spacer (pushes content to vertical centre) ────────────────
         root.pack_start(Gtk.Box(), True, True, 0)
 
-        # ── logo image (centred horizontally) ─────────────────────────────
+        # ── logo with glowing frame (centred horizontally) ────────────────
         logo_widget = self._make_logo()
         if logo_widget:
+            # EventBox with set_visible_window(True) is required so GTK
+            # renders the CSS background/border/box-shadow properties.
+            frame = Gtk.EventBox()
+            frame.set_visible_window(True)
+            frame.set_name("logo-frame")
+            frame.add(logo_widget)
+
             logo_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             logo_hbox.pack_start(Gtk.Box(), True, True, 0)
-            logo_hbox.pack_start(logo_widget, False, False, 0)
+            # Pack with 20 px padding so the outer glow isn't clipped
+            logo_hbox.pack_start(frame, False, False, 0)
             logo_hbox.pack_start(Gtk.Box(), True, True, 0)
-            root.pack_start(logo_hbox, False, False, 0)
-
-        # ── gap between logo and status row ──────────────────────────────
-        gap = Gtk.Box()
-        gap.set_size_request(-1, 28)
-        root.pack_start(gap, False, False, 0)
+            root.pack_start(logo_hbox, False, False, 20)
 
         # ── status label + progress bar (centred, 700 px wide) ───────────
         bar_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -138,7 +153,7 @@ class SplashScreen:
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, 15, self._on_sigterm)
         GLib.timeout_add(TICK_MS, self._tick)
-        GLib.timeout_add(int(self.max_time * 1000), self._close)
+        self._close_tid = GLib.timeout_add(int(MAX_SECONDS * 1000), self._close)
 
         _log("showing window")
         self.win.show_all()
@@ -180,8 +195,12 @@ class SplashScreen:
                 "⚠  No internet connection — Boosteroid may not work")
             self.status_label.get_style_context().add_class("warning")
             self.bar.get_style_context().add_class("warning")
+            # Cancel the 5-second normal close; replace with 10-second warn close.
+            if self._close_tid is not None:
+                GLib.source_remove(self._close_tid)
             self.max_time = WARN_SECONDS
-            GLib.timeout_add(int(WARN_SECONDS * 1000), self._close)
+            self._close_tid = GLib.timeout_add(
+                int(WARN_SECONDS * 1000), self._close)
         return False
 
     def _tick(self):

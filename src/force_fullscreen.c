@@ -5,6 +5,10 @@
  *
  * Build: gcc force_fullscreen.c -lX11 -o boosteroid-fullscreen
  * Run:   boosteroid-fullscreen &   (before or just after launching Boosteroid)
+ *
+ * Author: Schelstraete Bart
+ *         https://github.com/bschelst/boosteroid-steamos
+ *         https://www.schelstraete.org
  */
 #define _GNU_SOURCE
 #include <X11/Xlib.h>

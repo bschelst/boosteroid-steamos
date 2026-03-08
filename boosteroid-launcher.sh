@@ -2,6 +2,10 @@
 # Launcher for the Boosteroid Flatpak.
 # On first run: downloads Boosteroid from boosteroid.com and adds a Steam shortcut.
 # Subsequent runs: launches the cached binary directly.
+#
+# Author: Schelstraete Bart
+#         https://github.com/bschelst/boosteroid-steamos
+#         https://www.schelstraete.org
 
 set -euo pipefail
 

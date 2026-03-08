@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
 Splash screen for Boosteroid SteamOS (unofficial).
+
+Author: Schelstraete Bart
+        https://github.com/bschelst/boosteroid-steamos
+        https://www.schelstraete.org
 """
 
 import sys

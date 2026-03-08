@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
 Add Boosteroid as a non-Steam shortcut in Steam's library.
+
+Author: Schelstraete Bart
+        https://github.com/bschelst/boosteroid-steamos
+        https://www.schelstraete.org
 Reads and writes $STEAM_ROOT/userdata/<uid>/config/shortcuts.vdf
 using binary VDF format. Idempotent — safe to run multiple times.
 """

@@ -5,9 +5,13 @@
 
 set -euo pipefail
 
-# Shared with splash screen for live status updates
+# Shared with splash screen for live status updates.
+# Lifecycle: absent (no Boosteroid) → "step:/warn:" (waiting for old instance)
+#            → "boosteroid_running" (Boosteroid is active) → absent on exit.
+# The next launcher checks this file first before resorting to pgrep.
+# Do NOT blindly rm -f here — the file may be a valid running indicator
+# from the previous session.  Staleness is handled in _wait_for_boosteroid_close.
 STATUS_FILE="/tmp/.boosteroid_splash_status"
-rm -f "${STATUS_FILE}"   # clear any stale file from a previous crash
 
 # ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
 LOG=/tmp/boosteroid.log
@@ -87,15 +91,35 @@ chmod +x "${_OVERRIDE_BIN}/xdg-open"
 export PATH="${_OVERRIDE_BIN}:${PATH}"
 
 # ── Wait for any previous Boosteroid instance to exit ────────────────────────
-# Boosteroid can take a few seconds to fully shut down after the user quits.
-# Re-launching before it exits can cause the new session to fail.
-# We poll the host process list (via flatpak-spawn) and update the splash.
+# Detection (both checked):
+#   1. STATUS_FILE fresh (< 60 s) — written by THIS launcher before Boosteroid
+#      starts and removed on clean exit.  Most reliable indicator.
+#   2. flatpak-spawn pgrep fallback — catches cases where STATUS_FILE is absent
+#      (e.g. first launch after upgrade, or if file was removed externally).
 _wait_for_boosteroid_close() {
-    local max_attempts=5 wait_secs=4 i=1
-    if ! flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; then
-        return 0
+    local _should_wait=0
+
+    if [ -f "${STATUS_FILE}" ]; then
+        local _age
+        _age=$(( $(date +%s) - $(stat -c %Y "${STATUS_FILE}" 2>/dev/null || echo 0) ))
+        if [ "${_age}" -lt 60 ]; then
+            echo "==> STATUS_FILE found (age ${_age}s) — Boosteroid may still be running"
+            _should_wait=1
+        else
+            echo "==> STATUS_FILE is stale (age ${_age}s), clearing"
+            rm -f "${STATUS_FILE}"
+        fi
     fi
+
+    if [ "${_should_wait}" -eq 0 ]; then
+        flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1 \
+            && _should_wait=1 || true
+    fi
+
+    [ "${_should_wait}" -eq 1 ] || return 0
+
     echo "==> Previous Boosteroid instance still running, waiting..."
+    local max_attempts=5 wait_secs=4 i=1
     while flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; do
         if [ "$i" -gt "$max_attempts" ]; then
             echo "warn:Previous Boosteroid still running after ${max_attempts} retries — launching anyway" \
@@ -136,15 +160,16 @@ sleep 0.3   # let the service register before Boosteroid starts
 # Add Boosteroid's bundled libraries to the search path.
 export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
-# Ensure status file is gone before launch so splash closes normally
-rm -f "${STATUS_FILE}"
-
 # Wait for the splash to finish before starting Boosteroid.
 # Boosteroid immediately maps a fullscreen window and Gamescope switches
-# focus to it, hiding the splash — so we must exec only after splash exits.
+# focus to it, hiding the splash — so we must launch only after splash exits.
 if [ -n "${SPLASH_PID}" ]; then
     wait "${SPLASH_PID}" 2>/dev/null || true
 fi
+
+# Mark Boosteroid as running so the NEXT launcher detects it via STATUS_FILE.
+# Removed after Boosteroid exits (both paths below).
+echo "boosteroid_running" > "${STATUS_FILE}"
 
 # ── Filter debug output unless DEBUG=1 ──────────────────────────────────────
 # By default [debug] lines from Boosteroid are stripped from the log.
@@ -153,7 +178,10 @@ fi
 # shellcheck disable=SC2086
 if [ "${DEBUG:-0}" = "1" ]; then
     echo "==> Debug mode ON: [debug] lines will appear in log"
-    exec "${BINARY}" ${DECODE_FLAG} "$@"
+    "${BINARY}" ${DECODE_FLAG} "$@" || true
 else
-    "${BINARY}" ${DECODE_FLAG} "$@" 2>&1 | grep --line-buffered -v '\[debug\]'
+    "${BINARY}" ${DECODE_FLAG} "$@" 2>&1 | grep --line-buffered -v '\[debug\]' || true
 fi
+
+# Remove the running indicator now that Boosteroid has exited.
+rm -f "${STATUS_FILE}"

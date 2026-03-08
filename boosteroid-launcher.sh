@@ -13,6 +13,11 @@ set -euo pipefail
 # from the previous session.  Staleness is handled in _wait_for_boosteroid_close.
 STATUS_FILE="/tmp/.boosteroid_splash_status"
 
+# Ignore SIGTERM during startup so Steam session cleanup cannot kill this
+# launcher while it is still in the wait-for-previous-instance loop.
+# Default SIGTERM handling is restored just before Boosteroid is launched.
+trap 'echo "==> Startup: SIGTERM received, continuing"' TERM
+
 # ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
 LOG=/tmp/boosteroid.log
 > "$LOG"
@@ -102,7 +107,7 @@ _wait_for_boosteroid_close() {
     if [ -f "${STATUS_FILE}" ]; then
         local _age
         _age=$(( $(date +%s) - $(stat -c %Y "${STATUS_FILE}" 2>/dev/null || echo 0) ))
-        if [ "${_age}" -lt 60 ]; then
+        if [ "${_age}" -lt 30 ]; then
             echo "==> STATUS_FILE found (age ${_age}s) — Boosteroid may still be running"
             _should_wait=1
         else
@@ -119,7 +124,7 @@ _wait_for_boosteroid_close() {
     [ "${_should_wait}" -eq 1 ] || return 0
 
     echo "==> Previous Boosteroid instance still running, waiting..."
-    local max_attempts=5 wait_secs=4 i=1
+    local max_attempts=3 wait_secs=3 i=1
     while flatpak-spawn --host pgrep -f "BoosteroidGamesS" > /dev/null 2>&1; do
         if [ "$i" -gt "$max_attempts" ]; then
             echo "warn:Previous Boosteroid still running after ${max_attempts} retries — launching anyway" \
@@ -166,6 +171,9 @@ export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 if [ -n "${SPLASH_PID}" ]; then
     wait "${SPLASH_PID}" 2>/dev/null || true
 fi
+
+# Restore default SIGTERM now that startup is complete.
+trap - TERM
 
 # Mark Boosteroid as running so the NEXT launcher detects it via STATUS_FILE.
 # Removed after Boosteroid exits (both paths below).

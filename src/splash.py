@@ -77,15 +77,12 @@ class SplashScreen:
         self.win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
         self.win.set_title("Boosteroid SteamOS")
         self.win.set_decorated(False)
-        self.win.set_position(Gtk.WindowPosition.CENTER)
-        self.win.set_default_size(580, 260)
         self.win.set_resizable(False)
         self.win.connect("destroy", Gtk.main_quit)
 
-        # override_redirect: bypass the WM entirely (needed in Gamescope
-        # which has no traditional window manager)
-        self.win.realize()
-        self.win.get_window().set_override_redirect(True)
+        # Gamescope (Game Mode) only composites fullscreen X11 windows.
+        # Request fullscreen before show_all() so it is set when the window maps.
+        self.win.fullscreen()
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.win.add(root)
@@ -94,12 +91,17 @@ class SplashScreen:
         accent.set_name("accent")
         root.pack_start(accent, False, False, 0)
 
+        # Centre a fixed-width content panel in the fullscreen window
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        root.pack_start(hbox, True, True, 0)
+
+        hbox.pack_start(Gtk.Box(), True, True, 0)   # left spacer
+
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        content.set_margin_start(56)
-        content.set_margin_end(56)
-        content.set_margin_top(44)
-        content.set_margin_bottom(36)
-        root.pack_start(content, True, True, 0)
+        content.set_size_request(620, -1)
+        hbox.pack_start(content, False, False, 0)
+
+        hbox.pack_start(Gtk.Box(), True, True, 0)   # right spacer
 
         title = Gtk.Label(label="☁  Boosteroid SteamOS")
         title.set_name("title")

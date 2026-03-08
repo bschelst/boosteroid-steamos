@@ -63,7 +63,7 @@ step "Downloading Boosteroid Flatpak${RELEASE_TAG:+ (${RELEASE_TAG})}..."
 # final bar line is flushed (process-substitution timing is not reliable here).
 _PROG_PIPE=$(mktemp -u /tmp/.boosteroid-dl-XXXXXX)
 mkfifo "$_PROG_PIPE"
-awk 'BEGIN{RS="\r";ORS=""}{printf "\r  %s",$0;fflush()}' < "$_PROG_PIPE" >&2 &
+awk 'BEGIN{RS="\r";ORS=""}{printf "\r\033[2K  %s",$0;fflush()}' < "$_PROG_PIPE" >&2 &
 _PROG_PID=$!
 curl -L --progress-bar -o "$TMP_FLATPAK" "$FLATPAK_URL" 2>"$_PROG_PIPE"
 wait "$_PROG_PID" 2>/dev/null || true

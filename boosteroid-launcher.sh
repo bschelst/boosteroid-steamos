@@ -7,6 +7,7 @@ set -euo pipefail
 
 # Shared with splash screen for live status updates
 STATUS_FILE="/tmp/.boosteroid_splash_status"
+rm -f "${STATUS_FILE}"   # clear any stale file from a previous crash
 
 # ── Debug log (check /tmp/boosteroid.log from Desktop Mode after launch) ─────
 LOG=/tmp/boosteroid.log

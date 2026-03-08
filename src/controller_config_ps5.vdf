@@ -1,7 +1,7 @@
 "controller_mappings"
 {
 	"version"		"3"
-	"revision"		"36"
+	"revision"		"40"
 	"title"		"Boosteroid"
 	"description"		"Default: Mouse+Keyboard. Tap touchpad=Enter, double-tap or L1/R1 grips to toggle Gamepad."
 	"creator"		"0"
@@ -12,7 +12,7 @@
 	"controller_caps"		"580344831"
 	"major_revision"		"0"
 	"minor_revision"		"0"
-	"Timestamp"		"-602056705"
+	"Timestamp"		"-599959553"
 	"actions"
 	{
 		"Default"
@@ -930,6 +930,84 @@
 			}
 		}
 	}
+	"group"
+	{
+		"id"		"27"
+		"mode"		"dpad"
+		"name"		""
+		"description"		""
+		"inputs"
+		{
+			"dpad_north"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"mouse_wheel SCROLL_UP, , "
+						}
+					}
+				}
+				"disabled_activators"
+				{
+				}
+			}
+			"dpad_south"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"mouse_wheel SCROLL_DOWN, , "
+						}
+					}
+				}
+				"disabled_activators"
+				{
+				}
+			}
+			"dpad_east"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press RIGHT_ARROW, , "
+						}
+					}
+				}
+				"disabled_activators"
+				{
+				}
+			}
+			"dpad_west"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"key_press LEFT_ARROW, , "
+						}
+					}
+				}
+				"disabled_activators"
+				{
+				}
+			}
+		}
+		"settings"
+		{
+			"requires_click"		"0"
+		}
+	}
 	"preset"
 	{
 		"id"		"0"
@@ -939,7 +1017,8 @@
 			"7"		"switch active"
 			"0"		"button_diamond active"
 			"1"		"right_joystick active"
-			"2"		"joystick active"
+			"2"		"joystick inactive"
+			"27"		"joystick active"
 			"3"		"left_trigger active"
 			"4"		"right_trigger active"
 			"5"		"dpad active"

@@ -1,7 +1,7 @@
 "controller_mappings"
 {
 	"version"		"3"
-	"revision"		"36"
+	"revision"		"41"
 	"title"		"Boosteroid"
 	"description"		"Default: Mouse+Keyboard. Tap trackpad=Enter, double-tap or press L4/R4 to toggle Gamepad."
 	"creator"		"0"
@@ -12,7 +12,7 @@
 	"controller_caps"		"23117823"
 	"major_revision"		"0"
 	"minor_revision"		"0"
-	"Timestamp"		"-599959553"
+	"Timestamp"		"-595591144"
 	"actions"
 	{
 		"Default"
@@ -891,6 +891,22 @@
 		"description"		""
 		"inputs"
 		{
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button JOYSTICK_LEFT, , "
+						}
+					}
+				}
+				"disabled_activators"
+				{
+				}
+			}
 		}
 	}
 	"group"
@@ -965,10 +981,54 @@
 				{
 				}
 			}
+			"click"
+			{
+				"activators"
+				{
+					"Full_Press"
+					{
+						"bindings"
+						{
+							"binding"		"xinput_button JOYSTICK_LEFT, , "
+						}
+					}
+				}
+				"disabled_activators"
+				{
+				}
+			}
 		}
 		"settings"
 		{
 			"requires_click"		"0"
+		}
+	}
+	"group"
+	{
+		"id"		"46"
+		"mode"		"gyro_to_joystick_deflection"
+		"name"		""
+		"description"		""
+		"inputs"
+		{
+		}
+		"settings"
+		{
+			"gyro_to_2d_conversion_style"		"1"
+		}
+	}
+	"group"
+	{
+		"id"		"48"
+		"mode"		"gyro_to_joystick_deflection"
+		"name"		""
+		"description"		""
+		"inputs"
+		{
+		}
+		"settings"
+		{
+			"gyro_to_2d_conversion_style"		"1"
 		}
 	}
 	"group"
@@ -1219,6 +1279,26 @@
 			}
 		}
 	}
+	"group"
+	{
+		"id"		"50"
+		"mode"		"gyro_to_joystick"
+		"name"		""
+		"description"		""
+		"inputs"
+		{
+		}
+	}
+	"group"
+	{
+		"id"		"51"
+		"mode"		"gyro_to_joystick"
+		"name"		""
+		"description"		""
+		"inputs"
+		{
+		}
+	}
 	"preset"
 	{
 		"id"		"0"
@@ -1241,6 +1321,8 @@
 			"5"		"dpad active"
 			"6"		"right_joystick inactive"
 			"20"		"right_joystick active"
+			"48"		"gyro inactive"
+			"50"		"gyro active"
 		}
 	}
 	"preset"
@@ -1260,6 +1342,8 @@
 			"14"		"right_trigger active"
 			"15"		"dpad active"
 			"12"		"right_joystick active"
+			"46"		"gyro inactive"
+			"51"		"gyro active"
 		}
 	}
 	"settings"

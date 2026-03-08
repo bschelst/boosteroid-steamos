@@ -86,10 +86,14 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             os.close(fd)
             log(f"OpenFile: {path}")
             # xdg-open fails in Game Mode (no XDG_CURRENT_DESKTOP set) for directories.
-            # Try file managers directly: dolphin (KDE/SteamOS), nautilus (GNOME/Bazzite).
+            # Try file managers directly:
+            #   dolphin        — KDE/SteamOS (pre-installed)
+            #   flatpak run org.kde.index — touch-friendly, works in Game Mode (install from Flathub)
+            #   nautilus       — GNOME/Bazzite (pre-installed)
+            #   xdg-open       — last resort
             subprocess.Popen([
                 "flatpak-spawn", "--host", "bash", "-c",
-                'dolphin "$1" 2>/dev/null || nautilus "$1" 2>/dev/null || xdg-open "$1"',
+                'dolphin "$1" 2>/dev/null || flatpak run org.kde.index "$1" 2>/dev/null || nautilus "$1" 2>/dev/null || xdg-open "$1"',
                 "--", path,
             ])
         except Exception as exc:

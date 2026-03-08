@@ -27,7 +27,7 @@ except Exception as e:
     _log(f"GTK unavailable, skipping: {e}")
     sys.exit(0)
 
-MAX_SECONDS  = 5.0
+MAX_SECONDS  = 10.0
 WARN_SECONDS = 8.0
 TICK_MS      = 50
 

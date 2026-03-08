@@ -172,7 +172,7 @@ Make sure you launch Boosteroid from Steam (not directly from the app menu) so i
 ```bash
 # Add Flathub and install the runtime (once)
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install --user flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+flatpak install --user flathub org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
 
 # Build
 flatpak-builder --user --force-clean build-dir org.schelstraete.boosteroid.yml

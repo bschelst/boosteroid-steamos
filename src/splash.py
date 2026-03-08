@@ -8,6 +8,7 @@ import os
 import math
 import socket
 import threading
+import time
 
 os.environ.setdefault("GDK_BACKEND", "x11")
 
@@ -294,6 +295,10 @@ class SplashScreen:
 
     def _poll_launcher(self):
         try:
+            mtime = os.stat(STATUS_FILE).st_mtime
+            if time.time() - mtime > 30:
+                # Stale file from a crashed previous session — treat as absent
+                raise FileNotFoundError
             with open(STATUS_FILE) as f:
                 line = f.read().strip()
         except FileNotFoundError:

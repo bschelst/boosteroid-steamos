@@ -43,6 +43,18 @@ except ImportError as e:
     sys.exit(0)
 
 
+def _play_file(filepath):
+    """Try to play a video file. Uses host mpv/vlc via flatpak-spawn --host."""
+    log(f"play: {filepath}")
+    subprocess.Popen([
+        "flatpak-spawn", "--host", "bash", "-c",
+        'mpv --fullscreen "$1" 2>/dev/null'
+        ' || vlc --fullscreen "$1" 2>/dev/null'
+        ' || ffplay "$1" 2>/dev/null',
+        "--", filepath,
+    ])
+
+
 def _open_clips_browser(path):
     """GTK file chooser opened from within the Flatpak — works in Game Mode."""
     try:
@@ -57,8 +69,18 @@ def _open_clips_browser(path):
         dialog.add_filter(filt)
 
         dialog.add_button("Close", Gtk.ResponseType.CANCEL)
+        dialog.add_button("Open", Gtk.ResponseType.OK)
         dialog.show_all()
-        dialog.connect("response", lambda d, _: d.destroy())
+
+        def on_response(d, response_id):
+            if response_id == Gtk.ResponseType.OK:
+                filepath = d.get_filename()
+                if filepath:
+                    _play_file(filepath)
+                return  # keep dialog open so user can open more files
+            d.destroy()
+
+        dialog.connect("response", on_response)
     except Exception as exc:
         log(f"clips browser error: {exc}")
     return False

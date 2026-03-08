@@ -78,7 +78,16 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             log(f"error: {exc}")
         invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
     elif method == "OpenFile":
-        log("OpenFile (ignored)")
+        try:
+            msg = invoc.get_message()
+            fd_list = msg.get_unix_fd_list()
+            fd = fd_list.get(params[1])
+            path = os.readlink(f"/proc/self/fd/{fd}")
+            os.close(fd)
+            log(f"OpenFile: {path}")
+            subprocess.Popen(["flatpak-spawn", "--host", "xdg-open", path])
+        except Exception as exc:
+            log(f"OpenFile error: {exc}")
         invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
     else:
         invoc.return_dbus_error(

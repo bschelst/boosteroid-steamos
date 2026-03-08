@@ -26,10 +26,10 @@
         fill="white" letter-spacing="-1">BOOSTEROID</text>
 
   <!-- Gradient underline -->
-  <rect x="240" y="182" width="580" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
+  <rect x="240" y="182" width="620" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
 
   <!-- Tagline -->
   <text x="242" y="224"
         font-family="Arial, sans-serif" font-size="22"
-        fill="#7a9acc" letter-spacing="4">CLOUD GAMING  ·  STEAM DECK</text>
+        fill="#7a9acc" letter-spacing="4">CLOUD GAMING  ·  STEAMOS  ·  BAZZITE</text>
 </svg>

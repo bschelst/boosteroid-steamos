@@ -55,12 +55,19 @@
         font-family="Arial, sans-serif" font-size="22"
         fill="#7a9acc" text-anchor="middle" letter-spacing="4">CLOUD GAMING</text>
 
-  <!-- unofficial pill -->
-  <rect x="210" y="800" width="180" height="40" rx="20"
+  <!-- "UNOFFICIAL" pill -->
+  <rect x="102" y="800" width="160" height="38" rx="19"
         fill="none" stroke="#5C35EE" stroke-width="1.5" opacity="0.7"/>
-  <text x="300" y="826"
-        font-family="Arial, sans-serif" font-size="17"
-        fill="#9980e8" text-anchor="middle" letter-spacing="2">unofficial</text>
+  <text x="182" y="824"
+        font-family="Arial, sans-serif" font-size="15"
+        fill="#9980e8" text-anchor="middle" letter-spacing="1.5">UNOFFICIAL</text>
+
+  <!-- "SCHELSTRAETE.ORG" pill -->
+  <rect x="274" y="800" width="224" height="38" rx="19"
+        fill="none" stroke="#5C35EE" stroke-width="1.5" opacity="0.7"/>
+  <text x="386" y="824"
+        font-family="Arial, sans-serif" font-size="15"
+        fill="#9980e8" text-anchor="middle" letter-spacing="1.5">SCHELSTRAETE.ORG</text>
 
   <!-- Bottom bar -->
   <rect x="0" y="888" width="600" height="12" fill="url(#accent)" opacity="0.5"/>

@@ -60,19 +60,26 @@
         fill="white" letter-spacing="-2">BOOSTEROID</text>
 
   <!-- Gradient underline -->
-  <rect x="1000" y="302" width="680" height="5" rx="2.5" fill="url(#accent)" opacity="0.85"/>
+  <rect x="1000" y="302" width="820" height="5" rx="2.5" fill="url(#accent)" opacity="0.85"/>
 
   <!-- Tagline -->
   <text x="1004" y="368"
         font-family="Arial, sans-serif" font-size="34" font-weight="400"
-        fill="#7a9acc" letter-spacing="5">CLOUD GAMING  ·  STEAM DECK</text>
+        fill="#7a9acc" letter-spacing="5">CLOUD GAMING  ·  STEAMOS  ·  BAZZITE</text>
 
-  <!-- "unofficial" pill -->
+  <!-- "UNOFFICIAL" pill -->
   <rect x="1000" y="406" width="198" height="46" rx="23"
         fill="none" stroke="#5C35EE" stroke-width="2" opacity="0.75"/>
   <text x="1099" y="436"
         font-family="Arial, sans-serif" font-size="20"
-        fill="#9980e8" text-anchor="middle" letter-spacing="2">unofficial</text>
+        fill="#9980e8" text-anchor="middle" letter-spacing="2">UNOFFICIAL</text>
+
+  <!-- "SCHELSTRAETE.ORG" pill -->
+  <rect x="1218" y="406" width="248" height="46" rx="23"
+        fill="none" stroke="#5C35EE" stroke-width="2" opacity="0.75"/>
+  <text x="1342" y="436"
+        font-family="Arial, sans-serif" font-size="18"
+        fill="#9980e8" text-anchor="middle" letter-spacing="2">SCHELSTRAETE.ORG</text>
 
   <!-- Bottom gradient bar -->
   <rect x="0" y="605" width="1920" height="15" fill="url(#accent)" opacity="0.5"/>

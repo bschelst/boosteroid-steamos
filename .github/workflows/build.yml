@@ -31,15 +31,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/share/flatpak
-          key: flatpak-${{ runner.os }}-24.08-${{ hashFiles('org.schelstraete.boosteroid.yml') }}
+          key: flatpak-${{ runner.os }}-25.08-${{ hashFiles('org.schelstraete.boosteroid.yml') }}
           restore-keys: |
-            flatpak-${{ runner.os }}-24.08-
+            flatpak-${{ runner.os }}-25.08-
 
       - name: Install runtime and SDK
         run: |
           flatpak install --user -y flathub \
-            org.freedesktop.Platform//24.08 \
-            org.freedesktop.Sdk//24.08
+            org.freedesktop.Platform//25.08 \
+            org.freedesktop.Sdk//25.08
 
       - name: Build Flatpak
         env:

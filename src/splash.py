@@ -9,8 +9,16 @@ Exits cleanly on SIGTERM when the launcher is ready.
 """
 
 import sys
+import os
 import socket
 import threading
+
+# Force X11 backend — Gamescope provides XWayland on $DISPLAY.
+# Without this, GTK may try to use GAMESCOPE_WAYLAND_DISPLAY as a Wayland
+# socket, fail to connect, and hang silently.
+os.environ.setdefault("GDK_BACKEND", "x11")
+
+print("[splash] starting", file=sys.stderr, flush=True)
 
 try:
     import gi

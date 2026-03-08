@@ -43,6 +43,13 @@ modules:
         url: https://github.com/numactl/numactl/releases/download/v2.0.18/numactl-2.0.18.tar.gz
         sha256: b4fc0956317680579992d7815bc43d0538960dc73aa1dd8ca7e3806e30bc1274
 
+  - name: python3-pygobject
+    buildsystem: meson
+    sources:
+      - type: archive
+        url: https://download.gnome.org/sources/pygobject/3.50/pygobject-3.50.2.tar.gz
+        sha256: ece6b860aab77cb649fdfc6e88d8a83765e7a62f7ffd39a628d6e2a0d397a7ff
+
   - name: boosteroid
     buildsystem: simple
     build-commands:

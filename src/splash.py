@@ -54,7 +54,6 @@ window {
 }
 #accent { background-color: #1b9fff; min-height: 4px; }
 
-/* Glowing logo border — two states toggled for heartbeat pulse */
 #logo-frame {
     border-radius: 8px;
     border: 1px solid #1b9fff;

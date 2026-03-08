@@ -85,17 +85,33 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             path = os.readlink(f"/proc/self/fd/{fd}")
             os.close(fd)
             log(f"OpenFile: {path}")
-            # xdg-open fails in Game Mode (no XDG_CURRENT_DESKTOP set) for directories.
-            # Try file managers directly:
-            #   dolphin        — KDE/SteamOS (pre-installed)
-            #   flatpak run org.kde.index — touch-friendly, works in Game Mode (install from Flathub)
-            #   nautilus       — GNOME/Bazzite (pre-installed)
-            #   xdg-open       — last resort
-            subprocess.Popen([
-                "flatpak-spawn", "--host", "bash", "-c",
-                'dolphin "$1" 2>/dev/null || flatpak run org.kde.index "$1" 2>/dev/null || nautilus "$1" 2>/dev/null || xdg-open "$1"',
-                "--", path,
-            ])
+            # Prefer org.kde.index (Flathub) — touch-friendly, works in Game Mode.
+            # If not installed, show a kdialog/zenity hint and fall back to
+            # dolphin (KDE/SteamOS) or nautilus (GNOME/Bazzite) for Desktop Mode.
+            r = subprocess.run(
+                ["flatpak-spawn", "--host", "flatpak", "info", "org.kde.index"],
+                capture_output=True,
+            )
+            if r.returncode == 0:
+                log("OpenFile: launching org.kde.index")
+                subprocess.Popen(["flatpak-spawn", "--host", "flatpak", "run", "org.kde.index", path])
+            else:
+                log("OpenFile: org.kde.index not installed, showing install hint")
+                install_hint = (
+                    "To browse clips in Game Mode, install Index from Flathub:\n\n"
+                    "flatpak install flathub org.kde.index"
+                )
+                subprocess.Popen([
+                    "flatpak-spawn", "--host", "bash", "-c",
+                    'kdialog --title "Install Index" --msgbox "$1" 2>/dev/null'
+                    ' || zenity --info --title "Install Index" --text "$1"',
+                    "--", install_hint,
+                ])
+                subprocess.Popen([
+                    "flatpak-spawn", "--host", "bash", "-c",
+                    'dolphin "$1" 2>/dev/null || nautilus "$1" 2>/dev/null',
+                    "--", path,
+                ])
         except Exception as exc:
             log(f"OpenFile error: {exc}")
         invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))

@@ -22,6 +22,7 @@ This project downloads and runs the **official, unmodified Boosteroid binary** f
 - **Controllers & headsets**: full support for gamepads, USB and Bluetooth audio devices
 - **Google login in Game Mode**: opens in Steam's browser without leaving Game Mode
 - **Works in both modes**: Game Mode (Gamescope) and Desktop Mode (KDE Plasma)
+- **Video clips**: recordings saved by Boosteroid are stored in `~/Videos/BoosteroidClips`
 
 ---
 

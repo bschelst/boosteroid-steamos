@@ -22,6 +22,7 @@ Requires --own-name=org.freedesktop.portal.Desktop in the Flatpak manifest.
 import subprocess
 import sys
 import threading
+from urllib.parse import urlparse
 
 import os
 LOG = os.path.join(os.path.expanduser("~"), "logs", "boosteroid.log")
@@ -292,11 +293,29 @@ PORTAL_XML = """
 
 REQUEST_PATH = "/org/freedesktop/portal/desktop/request/boosteroid/1"
 
+_ALLOWED_URI_SCHEMES = frozenset({"https", "http"})
+
+_ALLOWED_OPEN_DIRS = [
+    os.path.expanduser("~/Videos"),
+    os.path.expanduser("~/Downloads"),
+    "/tmp",
+]
+
 
 def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
     if method == "OpenURI":
         uri = params[1]
         log(f"OpenURI: {uri}")
+        try:
+            parsed = urlparse(uri)
+            if parsed.scheme not in _ALLOWED_URI_SCHEMES:
+                log(f"OpenURI: blocked non-http(s) scheme: {parsed.scheme}")
+                invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
+                return
+        except Exception:
+            log("OpenURI: failed to parse URI, blocking")
+            invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
+            return
         try:
             r = subprocess.run(
                 ["flatpak-spawn", "--host", "steam", f"steam://openurl/{uri}"],
@@ -317,6 +336,12 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             path = os.readlink(f"/proc/self/fd/{fd}")
             os.close(fd)
             log(f"OpenFile: {path}")
+            real_path = os.path.realpath(path)
+            if not any(real_path.startswith(os.path.realpath(d))
+                       for d in _ALLOWED_OPEN_DIRS):
+                log(f"OpenFile: blocked path outside allowed dirs: {real_path}")
+                invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
+                return
             if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY"):
                 # Game Mode: external apps can't connect to Gamescope's Wayland
                 # socket when spawned via flatpak-spawn --host (Connection refused).

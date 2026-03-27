@@ -17,6 +17,7 @@ import socket
 import threading
 import time
 import urllib.request
+from urllib.parse import urlparse
 
 os.environ.setdefault("GDK_BACKEND", "x11")
 
@@ -56,6 +57,18 @@ LOGO_WIDTH = 800
 GATEWAY_VERSION_URL = "https://boosteroid.schelstraete.org/api/version"
 GITHUB_REPO_URL     = "https://github.com/bschelst/boosteroid-steamos"
 STATS_FILE          = os.path.expanduser("~/logs/boosteroid-stats.csv")
+
+_DOWNLOAD_URL_TEMPLATE = "https://github.com/bschelst/boosteroid-steamos/releases/download/{tag}/org.schelstraete.boosteroid.flatpak"
+_SAFE_UPDATE_HOSTS = frozenset({"github.com", "objects.githubusercontent.com"})
+
+
+def _is_safe_update_url(url):
+    """Validate that a URL is HTTPS and from a trusted GitHub host."""
+    try:
+        parsed = urlparse(url)
+        return parsed.scheme == "https" and parsed.netloc in _SAFE_UPDATE_HOSTS
+    except Exception:
+        return False
 
 # (elapsed_seconds, icon, label) -- no trailing dots; animated separately
 STEPS = [
@@ -525,7 +538,8 @@ class SplashScreen:
             self._update_label.set_name("update-available")
             self._update_label.set_text(
                 f"\u2b06  {latest_tag} available")
-            self._latest_download_url = download_url
+            # Construct download URL from hardcoded template — never trust the gateway URL.
+            self._latest_download_url = _DOWNLOAD_URL_TEMPLATE.format(tag=latest_tag)
             self._latest_tag = latest_tag
             # Pause auto-close so user can decide
             if self._close_tid is not None:
@@ -600,6 +614,9 @@ class SplashScreen:
         import subprocess
         tmp_path = "/tmp/boosteroid-update.flatpak"
         try:
+            if not _is_safe_update_url(self._latest_download_url):
+                raise RuntimeError(
+                    f"blocked unsafe update URL: {self._latest_download_url}")
             # Download on host via flatpak-spawn
             _log(f"downloading update from {self._latest_download_url}")
             r = subprocess.run(

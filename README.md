@@ -148,6 +148,22 @@ To enable full debug output, add `--env=DEBUG=1` to the Steam shortcut's **Launc
 
 ---
 
+## 🚫 Disable splash screen
+
+To skip the splash screen on launch, add `--env=NOSPLASH=1` to the Steam shortcut's **Launch Options**:
+
+```
+run --env=NOSPLASH=1 org.schelstraete.boosteroid
+```
+
+You can combine it with debug mode:
+
+```
+run --env=DEBUG=1 --env=NOSPLASH=1 org.schelstraete.boosteroid
+```
+
+---
+
 ## ⚙️ Video decoder
 
 On AMD (Steam Deck), VA-API hardware decode is selected automatically. You can override this:

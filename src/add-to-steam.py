@@ -145,6 +145,13 @@ def _install_controller_config(shortcuts_vdf_path):
         os.remove(old_dst)
         print(f"Removed stale controller config: {old_dst}")
 
+    # Remove stale config from the wrong UID path (pre-v1.1.11 bug: uid="config").
+    for root in _STEAM_CTRL_CONFIGS_ROOTS:
+        stale_dir = os.path.join(root, "config")
+        if os.path.isdir(stale_dir):
+            shutil.rmtree(stale_dir)
+            print(f"Removed stale controller config dir: {stale_dir}")
+
     config_dir = _find_ctrl_config_dir(uid)
     if config_dir is None:
         print("Steam Controller Configs dir not found — skipping controller config", file=sys.stderr)
@@ -160,11 +167,9 @@ def _install_controller_config(shortcuts_vdf_path):
         #   configset_controller_neptune.vdf  →  controller_neptune.vdf
         ctrl_filename = configset_name.replace("configset_", "")
         dst = os.path.join(app_dir, ctrl_filename)
-        with open(src, "r") as f:
-            cfg = vdf.load(f, mapper=vdf.VDFDict)
-        cfg["controller_mappings"]["export_type"] = "unknown"
-        with open(dst, "w") as f:
-            vdf.dump(cfg, f, pretty=True)
+        # Copy directly — vdf.dump collapses duplicate "group"/"preset" keys,
+        # destroying the controller layout. The source already has export_type set.
+        shutil.copy2(src, dst)
         os.utime(dst, None)
         print(f"Controller config installed: {dst}")
         _update_configset(config_dir, configset_name, _APP_KEY)

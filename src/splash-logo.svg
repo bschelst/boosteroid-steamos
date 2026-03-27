@@ -64,28 +64,28 @@
       <!-- BOOSTEROID -->
       <text x="325" y="210"
             font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
-            font-size="84" font-weight="900"
+            font-size="78" font-weight="900"
             fill="white" letter-spacing="-2">BOOSTEROID</text>
 
       <!-- Gradient underline -->
-      <rect x="325" y="228" width="560" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
+      <rect x="325" y="225" width="540" height="4" rx="2" fill="url(#accent)" opacity="0.85"/>
 
       <!-- Tagline -->
-      <text x="328" y="268"
+      <text x="328" y="262"
             font-family="Arial, sans-serif" font-size="19" font-weight="400"
             fill="#7a9acc" letter-spacing="3">CLOUD GAMING  ·  STEAMOS  ·  BAZZITE</text>
 
       <!-- "UNOFFICIAL" pill -->
-      <rect x="325" y="290" width="162" height="40" rx="20"
+      <rect x="325" y="282" width="162" height="40" rx="20"
             fill="none" stroke="#5C35EE" stroke-width="1.8" opacity="0.75"/>
-      <text x="406" y="316"
+      <text x="406" y="308"
             font-family="Arial, sans-serif" font-size="16"
             fill="#9980e8" text-anchor="middle" letter-spacing="2">UNOFFICIAL</text>
 
       <!-- "SCHELSTRAETE.ORG" pill -->
-      <rect x="500" y="290" width="252" height="40" rx="20"
+      <rect x="500" y="282" width="252" height="40" rx="20"
             fill="none" stroke="#5C35EE" stroke-width="1.8" opacity="0.75"/>
-      <text x="626" y="316"
+      <text x="626" y="308"
             font-family="Arial, sans-serif" font-size="16"
             fill="#9980e8" text-anchor="middle" letter-spacing="2">SCHELSTRAETE.ORG</text>
 

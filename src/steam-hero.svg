@@ -75,9 +75,9 @@
         fill="#9980e8" text-anchor="middle" letter-spacing="2">UNOFFICIAL</text>
 
   <!-- "SCHELSTRAETE.ORG" pill -->
-  <rect x="1218" y="406" width="248" height="46" rx="23"
+  <rect x="1218" y="406" width="282" height="46" rx="23"
         fill="none" stroke="#5C35EE" stroke-width="2" opacity="0.75"/>
-  <text x="1342" y="436"
+  <text x="1359" y="436"
         font-family="Arial, sans-serif" font-size="18"
         fill="#9980e8" text-anchor="middle" letter-spacing="2">SCHELSTRAETE.ORG</text>
 

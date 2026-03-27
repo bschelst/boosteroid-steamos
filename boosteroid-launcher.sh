@@ -37,8 +37,12 @@ echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}"
 # ── Splash screen ────────────────────────────────────────────────────────────
 # Show a loading splash early so the user sees something immediately.
 # Requires a display (X11 or Wayland); silently skipped if neither is available.
+# To disable, add --env=NOSPLASH=1 to Steam launch options:
+#   run --env=NOSPLASH=1 org.schelstraete.boosteroid
 SPLASH_PID=""
-if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+if [ "${NOSPLASH:-0}" = "1" ]; then
+    echo "==> Splash screen disabled (NOSPLASH=1)"
+elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
     python3 /app/lib/boosteroid/splash.py &
     SPLASH_PID=$!
 fi
@@ -197,8 +201,38 @@ if [ -n "${SPLASH_PID}" ]; then
     wait "${SPLASH_PID}" 2>/dev/null || true
 fi
 
-# Restore default SIGTERM now that startup is complete.
-trap - TERM
+# ── Session stats ────────────────────────────────────────────────────────────
+# Steam kills games with SIGKILL in Game Mode, so exit handlers never run.
+# Strategy: write start timestamp, then on NEXT launch close any unclosed session
+# by calculating duration from the start timestamp.
+STATS_FILE="$HOME/logs/boosteroid-stats.csv"
+if [ ! -f "$STATS_FILE" ]; then
+    echo "timestamp,event,version,duration_s,decoder" > "$STATS_FILE"
+fi
+
+# Close any previous unclosed session (last line is a "start" with no matching "end").
+_close_previous_session() {
+    local last_line last_event start_ts start_epoch end_epoch dur
+    last_line=$(tail -1 "$STATS_FILE")
+    last_event=$(echo "$last_line" | cut -d',' -f2)
+    if [ "$last_event" = "start" ]; then
+        start_ts=$(echo "$last_line" | cut -d',' -f1)
+        start_epoch=$(date -d "$start_ts" +%s 2>/dev/null) || return
+        # Use boosteroid.log mtime as the best estimate of when the session ended.
+        if [ -f "$LOG" ]; then
+            end_epoch=$(stat -c %Y "$LOG" 2>/dev/null) || end_epoch=$(date +%s)
+        else
+            end_epoch=$(date +%s)
+        fi
+        dur=$((end_epoch - start_epoch))
+        if [ "$dur" -lt 0 ] || [ "$dur" -gt 86400 ]; then
+            dur=0
+        fi
+        echo "$(date -d "@${end_epoch}" -Iseconds 2>/dev/null || date -Iseconds),end,${VERSION},${dur},$(echo "$last_line" | cut -d',' -f5)" >> "$STATS_FILE"
+        echo "==> Closed previous session (${dur}s, from log mtime)"
+    fi
+}
+_close_previous_session
 
 # ── Filter debug output unless DEBUG=1 ──────────────────────────────────────
 # By default [debug] lines from Boosteroid are stripped from the log.
@@ -219,9 +253,18 @@ fi
 BOOSTEROID_PID=$!
 echo "${BOOSTEROID_PID}" > "${STATUS_FILE}"
 echo "==> Boosteroid started (PID ${BOOSTEROID_PID})"
+echo "$(date -Iseconds),start,${VERSION},0,${DECODE_FLAG:--none-}" >> "$STATS_FILE"
 
 wait "${BOOSTEROID_PID}" || true
 
+# Write session end if we reach here (clean exit — rare in Game Mode).
+SESSION_END=$(date +%s)
+SESSION_START_TS=$(tail -1 "$STATS_FILE" | cut -d',' -f1)
+SESSION_START_EPOCH=$(date -d "$SESSION_START_TS" +%s 2>/dev/null || echo "$SESSION_END")
+SESSION_DUR=$((SESSION_END - SESSION_START_EPOCH))
+echo "$(date -Iseconds),end,${VERSION},${SESSION_DUR},${DECODE_FLAG:--none-}" >> "$STATS_FILE"
+echo "==> Session duration: ${SESSION_DUR}s"
+
 # Remove the running indicator now that Boosteroid has exited.
 rm -f "${STATUS_FILE}"
-echo "==> Boosteroid exited, STATUS_FILE removed"
+echo "==> Boosteroid exited"

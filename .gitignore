@@ -5,3 +5,5 @@ repo/
 __pycache__/
 *.pyc
 CL*
+local-build.sh
+local-install.sh

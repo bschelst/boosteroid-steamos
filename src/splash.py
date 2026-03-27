@@ -71,26 +71,6 @@ window {
     min-height: 4px;
 }
 
-#logo-frame {
-    border-radius: 8px;
-    border: 1px solid #1b9fff;
-    padding: 4px;
-}
-#logo-frame.glow-a {
-    box-shadow:
-        0 0  8px #1b9fff,
-        0 0 20px rgba(27, 159, 255, 0.55),
-        0 0 42px rgba(27, 159, 255, 0.25),
-        0 0 64px rgba(27, 159, 255, 0.10);
-}
-#logo-frame.glow-b {
-    box-shadow:
-        0 0 14px #1b9fff,
-        0 0 36px rgba(27, 159, 255, 0.90),
-        0 0 65px rgba(27, 159, 255, 0.55),
-        0 0 95px rgba(27, 159, 255, 0.25);
-}
-
 #status-card {
     background-color: rgba(10, 22, 40, 0.75);
     border-radius: 12px;
@@ -162,18 +142,12 @@ class SplashScreen:
         # ── top spacer ────────────────────────────────────────────────────
         root.pack_start(Gtk.Box(), True, True, 0)
 
-        # ── logo with glowing frame ───────────────────────────────────────
+        # ── logo with rounded corners + shadow (Cairo-drawn) ──────────────
         logo_widget = self._make_logo()
         if logo_widget:
-            self._frame = Gtk.EventBox()
-            self._frame.set_visible_window(True)
-            self._frame.set_name("logo-frame")
-            self._frame.get_style_context().add_class("glow-a")
-            self._frame.add(logo_widget)
-
             logo_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             logo_hbox.pack_start(Gtk.Box(), True, True, 0)
-            logo_hbox.pack_start(self._frame, False, False, 0)
+            logo_hbox.pack_start(logo_widget, False, False, 0)
             logo_hbox.pack_start(Gtk.Box(), True, True, 0)
             root.pack_start(logo_hbox, False, False, 20)
 
@@ -281,13 +255,57 @@ class SplashScreen:
             orig_w  = pb_orig.get_width()
             orig_h  = pb_orig.get_height()
             new_h   = int(orig_h * LOGO_WIDTH / orig_w)
-            pb      = pb_orig.scale_simple(LOGO_WIDTH, new_h,
-                                           GdkPixbuf.InterpType.BILINEAR)
+            self._logo_pb = pb_orig.scale_simple(LOGO_WIDTH, new_h,
+                                                  GdkPixbuf.InterpType.BILINEAR)
             _log(f"logo loaded ({orig_w}x{orig_h} -> {LOGO_WIDTH}x{new_h})")
-            return Gtk.Image.new_from_pixbuf(pb)
+
+            radius = 18
+            shadow_blur = 24
+            shadow_dy = 8
+            pad = shadow_blur + shadow_dy
+            da = Gtk.DrawingArea()
+            da.set_size_request(LOGO_WIDTH + pad * 2, new_h + pad * 2)
+            da.connect("draw", self._draw_logo, LOGO_WIDTH, new_h,
+                       radius, shadow_blur, shadow_dy, pad)
+            return da
         except Exception as e:
             _log(f"logo not loaded: {e}")
             return None
+
+    @staticmethod
+    def _rounded_rect(cr, x, y, w, h, r):
+        cr.new_sub_path()
+        cr.arc(x + w - r, y + r,     r, -math.pi / 2, 0)
+        cr.arc(x + w - r, y + h - r, r, 0,             math.pi / 2)
+        cr.arc(x + r,     y + h - r, r, math.pi / 2,   math.pi)
+        cr.arc(x + r,     y + r,     r, math.pi,        3 * math.pi / 2)
+        cr.close_path()
+
+    def _draw_logo(self, da, cr, img_w, img_h, radius, blur, dy, pad):
+        ix, iy = pad, pad
+        # Multi-layer shadow
+        layers = 6
+        for i in range(layers):
+            t = (i + 1) / layers
+            spread = blur * t
+            alpha = 0.12 * (1.0 - t * 0.6)
+            self._rounded_rect(cr,
+                               ix - spread, iy - spread + dy * t,
+                               img_w + spread * 2, img_h + spread * 2,
+                               radius + spread * 0.5)
+            cr.set_source_rgba(0, 0, 0, alpha)
+            cr.fill()
+        # Clip + draw image
+        self._rounded_rect(cr, ix, iy, img_w, img_h, radius)
+        cr.clip()
+        Gdk.cairo_set_source_pixbuf(cr, self._logo_pb, ix, iy)
+        cr.paint()
+        cr.reset_clip()
+        # Subtle border
+        self._rounded_rect(cr, ix + 0.5, iy + 0.5, img_w - 1, img_h - 1, radius)
+        cr.set_source_rgba(0.106, 0.624, 1.0, 0.25)
+        cr.set_line_width(1.0)
+        cr.stroke()
 
     def _add_history_step(self, _text):
         """Reveal the next history label by restoring its opacity (no layout change)."""

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import warnings
+warnings.filterwarnings("ignore", message=".*Gio.DBusConnection.register_object is deprecated.*")
+
 """
 Fake org.freedesktop.portal.OpenURI service using gi.repository.Gio.
 

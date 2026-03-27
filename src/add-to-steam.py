@@ -133,7 +133,9 @@ def _install_controller_config(shortcuts_vdf_path):
     Files go in: steamapps/common/Steam Controller Configs/{uid}/config/{app_name_lower}/
     Each is registered in its configset with "autosave" "1".
     """
-    uid = os.path.basename(os.path.dirname(shortcuts_vdf_path))
+    # shortcuts_vdf_path = .../userdata/{uid}/config/shortcuts.vdf
+    # Go up two levels (past "config/") to reach the uid directory.
+    uid = os.path.basename(os.path.dirname(os.path.dirname(shortcuts_vdf_path)))
 
     # Remove stale file from the wrong location (old installs put it in userdata).
     old_dst = os.path.join(

@@ -152,6 +152,16 @@ button.skip-btn:active {
     color: white;
     padding: 9px 20px 7px 20px;
 }
+button.update-btn:focus, button.skip-btn:focus {
+    outline: 2px solid #1b9fff;
+    outline-offset: 2px;
+}
+button.update-btn:focus {
+    background: rgba(27, 159, 255, 0.35);
+}
+button.skip-btn:focus {
+    background: rgba(255, 255, 255, 0.10);
+}
 
 progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
@@ -570,16 +580,20 @@ class SplashScreen:
         self._status_content.pack_start(btn_row, False, False, 8)
 
         update_btn = Gtk.Button(label="Update now")
+        update_btn.set_can_focus(True)
         update_btn.get_style_context().add_class("update-btn")
         update_btn.connect("clicked", self._on_update_clicked)
         btn_row.pack_start(update_btn, False, False, 0)
 
         skip_btn = Gtk.Button(label="Skip")
+        skip_btn.set_can_focus(True)
         skip_btn.get_style_context().add_class("skip-btn")
         skip_btn.connect("clicked", self._on_skip_clicked)
         btn_row.pack_start(skip_btn, False, False, 0)
 
         self._status_content.show_all()
+        # Grab focus so D-pad (arrows) can navigate and A/X (Space) can activate
+        update_btn.grab_focus()
 
     def _on_skip_clicked(self, _btn):
         """Resume normal launch."""

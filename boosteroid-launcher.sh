@@ -15,7 +15,7 @@ set -euo pipefail
 # The next launcher checks this file first before resorting to pgrep.
 # Do NOT blindly rm -f here — the file may be a valid running indicator
 # from the previous session.  Staleness is handled in _wait_for_boosteroid_close.
-STATUS_FILE="/tmp/.boosteroid_splash_status"
+STATUS_FILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/.boosteroid_splash_status"
 
 # Ignore SIGTERM during startup so Steam session cleanup cannot kill this
 # launcher while it is still in the wait-for-previous-instance loop.
@@ -49,6 +49,12 @@ fi
 
 XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
 XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+# Reject injected XDG_RUNTIME_DIR values that could redirect the xdg-open override
+# binary to an unexpected location. Only /run/user/* paths are valid Flatpak runtime dirs.
+case "${XDG_RUNTIME_DIR}" in
+    /run/user/*) ;;
+    *) XDG_RUNTIME_DIR="/run/user/$(id -u)" ;;
+esac
 INSTALL_DIR="${XDG_DATA_HOME}/boosteroid"
 BINARY="${INSTALL_DIR}/opt/BoosteroidGamesS.R.L./bin/Boosteroid"
 LIB_DIR="${INSTALL_DIR}/opt/BoosteroidGamesS.R.L./lib"

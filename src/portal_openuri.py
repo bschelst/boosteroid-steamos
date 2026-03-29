@@ -348,14 +348,14 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
                 # Show a GTK file chooser from within our own Flatpak instead —
                 # we already have display access since we're running inside Gamescope.
                 log("OpenFile: Game Mode — showing GTK file browser")
-                GLib.idle_add(lambda: _open_clips_browser(path))
+                GLib.idle_add(lambda: _open_clips_browser(real_path))
             else:
                 # Desktop Mode: use the system file manager directly.
                 log("OpenFile: Desktop Mode — opening with dolphin/nautilus")
                 subprocess.Popen([
                     "flatpak-spawn", "--host", "bash", "-c",
                     'dolphin "$1" 2>/dev/null || nautilus "$1" 2>/dev/null || xdg-open "$1"',
-                    "--", path,
+                    "--", real_path,
                 ])
         except Exception as exc:
             log(f"OpenFile error: {exc}")

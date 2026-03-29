@@ -38,7 +38,8 @@ except Exception as e:
     _log(f"GTK unavailable, skipping: {e}")
     sys.exit(0)
 
-STATUS_FILE   = "/tmp/.boosteroid_splash_status"
+_xdg_runtime_dir = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
+STATUS_FILE   = os.path.join(_xdg_runtime_dir, ".boosteroid_splash_status")
 
 MAX_SECONDS   = 5.0    # internet OK  -> close after 5 s
 WARN_SECONDS  = 10.0   # no internet  -> close after 10 s

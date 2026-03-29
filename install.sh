@@ -8,8 +8,10 @@
 set -euo pipefail
 
 FLATPAK_URL="https://github.com/bschelst/boosteroid-steamos/releases/latest/download/org.schelstraete.boosteroid.flatpak"
+SHA256_URL="${FLATPAK_URL}.sha256"
 FLATHUB_REPO="https://flathub.org/repo/flathub.flatpakrepo"
 TMP_FLATPAK="$(mktemp /tmp/boosteroid-XXXXXX.flatpak)"
+TMP_SHA256=""
 
 # Detect release version via the redirect Location header (no download needed).
 RELEASE_TAG=$(curl -fsI "$FLATPAK_URL" 2>/dev/null \
@@ -18,7 +20,7 @@ RELEASE_TAG=$(curl -fsI "$FLATPAK_URL" 2>/dev/null \
     | tr -d '\r\n') || RELEASE_TAG=""
 
 _PROG_PIPE=""
-cleanup() { rm -f "$TMP_FLATPAK" "${_PROG_PIPE:-}"; }
+cleanup() { rm -f "$TMP_FLATPAK" "${_PROG_PIPE:-}" "${TMP_SHA256:-}"; }
 trap cleanup EXIT
 
 # ── ANSI colours ─────────────────────────────────────────────────────────────
@@ -70,6 +72,22 @@ wait "$_PROG_PID" 2>/dev/null || true
 printf "\n" >&2
 rm -f "$_PROG_PIPE"; _PROG_PIPE=""
 ok "Download complete"
+
+step "Verifying integrity..."
+TMP_SHA256="$(mktemp /tmp/boosteroid-sha256-XXXXXX)"
+if ! curl -fsSL -o "$TMP_SHA256" "$SHA256_URL"; then
+    printf "\n  ERROR: Could not fetch SHA-256 checksum — release may be incomplete.\n" >&2
+    exit 1
+fi
+EXPECTED=$(awk '{print $1}' "$TMP_SHA256")
+ACTUAL=$(sha256sum "$TMP_FLATPAK" | awk '{print $1}')
+if [ "$EXPECTED" != "$ACTUAL" ]; then
+    printf "\n  ERROR: SHA-256 mismatch — download may be corrupted or tampered.\n" >&2
+    printf "  expected: %s\n" "$EXPECTED" >&2
+    printf "  actual:   %s\n" "$ACTUAL" >&2
+    exit 1
+fi
+ok "Integrity verified"
 
 step "Installing (this may take a minute on first run)..."
 if ! FLATPAK_OUT=$(TERM=dumb flatpak install --user -y "$TMP_FLATPAK" 2>&1); then

@@ -302,6 +302,131 @@ _ALLOWED_OPEN_DIRS = [
 ]
 
 
+def _open_url_in_steam(uri):
+    """Open uri in the Steam built-in browser, falling back to xdg-open."""
+    try:
+        r = subprocess.run(
+            ["flatpak-spawn", "--host", "steam", f"steam://openurl/{uri}"],
+            capture_output=True, timeout=5,
+        )
+        log(f"steam exit={r.returncode}")
+        if r.returncode != 0:
+            subprocess.Popen(["flatpak-spawn", "--host", "xdg-open", uri])
+            log("fell back to xdg-open")
+    except Exception as exc:
+        log(f"_open_url_in_steam error: {exc}")
+
+
+_HINT_SECS = 8   # auto-dismiss countdown for the login hint
+
+
+def _show_google_login_hint(uri):
+    """Show a 'how to close the browser' hint before opening the Steam overlay.
+
+    The Steam overlay browser has no controller-accessible close button.
+    This GTK window appears inside our Gamescope layer (above Boosteroid,
+    below the Steam overlay) so the user sees it before focus switches.
+    After the user clicks 'Got it' or the countdown expires, the Steam
+    overlay browser opens.
+    """
+    try:
+        win = Gtk.Window()
+        win.set_title("Google Sign-In")
+        win.set_default_size(520, -1)
+        win.set_resizable(False)
+        win.set_position(Gtk.WindowPosition.CENTER)
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(_CSS)
+        Gtk.StyleContext.add_provider_for_screen(
+            win.get_screen(), provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        outer.set_margin_top(28)
+        outer.set_margin_bottom(24)
+        outer.set_margin_start(32)
+        outer.set_margin_end(32)
+        win.add(outer)
+
+        # Icon
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_size(
+                "/app/share/boosteroid/icon-256.png", 72, 72)
+            img = Gtk.Image.new_from_pixbuf(pixbuf)
+        except Exception:
+            img = Gtk.Image.new_from_icon_name("system-users", Gtk.IconSize.DIALOG)
+        img.set_margin_bottom(14)
+        outer.pack_start(img, False, False, 0)
+
+        # Title
+        title_lbl = Gtk.Label(label="Sign in with Google")
+        title_lbl.get_style_context().add_class("title")
+        title_lbl.set_margin_bottom(12)
+        outer.pack_start(title_lbl, False, False, 0)
+
+        # Instruction — how to return after signing in
+        desc = Gtk.Label()
+        desc.set_markup(
+            "The Google sign-in page will open in the Steam browser.\n\n"
+            "When you are done,  press the  <b>\u229e Steam</b>  button\n"
+            "then choose  <b>\u25b6  Resume Game</b>  to return to Boosteroid."
+        )
+        desc.get_style_context().add_class("desc")
+        desc.set_justify(Gtk.Justification.CENTER)
+        desc.set_margin_bottom(28)
+        outer.pack_start(desc, False, False, 0)
+
+        # "Got it" button with countdown label
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        btn_box.set_halign(Gtk.Align.CENTER)
+        outer.pack_start(btn_box, False, False, 0)
+
+        got_it_btn = Gtk.Button()
+        got_it_btn.get_style_context().add_class("install")
+        btn_box.pack_start(got_it_btn, False, False, 0)
+
+        win.show_all()
+
+        # --- countdown + auto-open ---
+        _state = {"remaining": _HINT_SECS, "tid": None, "opened": False}
+
+        def _update_label():
+            got_it_btn.set_label(f"Got it  ({_state['remaining']}s)")
+
+        _update_label()
+
+        def _proceed(*_):
+            if _state["opened"]:
+                return False
+            _state["opened"] = True
+            if _state["tid"] is not None:
+                GLib.source_remove(_state["tid"])
+                _state["tid"] = None
+            win.destroy()
+            _open_url_in_steam(uri)
+            return False
+
+        def _tick():
+            _state["remaining"] -= 1
+            _update_label()
+            if _state["remaining"] <= 0:
+                _state["tid"] = None
+                _proceed()
+                return False          # stop timer
+            return True              # keep ticking
+
+        _state["tid"] = GLib.timeout_add(1000, _tick)
+        got_it_btn.connect("clicked", _proceed)
+        # If the window is closed by other means (e.g. Alt+F4), still open the browser
+        win.connect("destroy", _proceed)
+
+    except Exception as exc:
+        log(f"login hint error: {exc}")
+        _open_url_in_steam(uri)   # fall back to opening directly
+
+
 def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
     if method == "OpenURI":
         uri = params[1]
@@ -316,18 +441,17 @@ def on_method_call(conn, sender, path, iface, method, params, invoc, *_args):
             log("OpenURI: failed to parse URI, blocking")
             invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
             return
-        try:
-            r = subprocess.run(
-                ["flatpak-spawn", "--host", "steam", f"steam://openurl/{uri}"],
-                capture_output=True, timeout=5,
-            )
-            log(f"steam exit={r.returncode}")
-            if r.returncode != 0:
-                subprocess.Popen(["flatpak-spawn", "--host", "xdg-open", uri])
-                log("fell back to xdg-open")
-        except Exception as exc:
-            log(f"error: {exc}")
+
+        # Return the D-Bus response immediately; open the browser asynchronously.
+        # This lets the GTK hint window appear (in our Gamescope layer) before
+        # the Steam overlay steals focus.
         invoc.return_value(GLib.Variant("(o)", (REQUEST_PATH,)))
+
+        if "accounts.google.com" in parsed.netloc:
+            log("OpenURI: Google auth — showing hint before opening Steam browser")
+            GLib.idle_add(lambda: _show_google_login_hint(uri) or False)
+        else:
+            GLib.idle_add(lambda: _open_url_in_steam(uri) or False)
     elif method == "OpenFile":
         try:
             msg = invoc.get_message()

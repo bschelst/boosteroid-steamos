@@ -108,9 +108,9 @@ window {
 #countdown.warning { color: rgba(255, 152, 0, 0.60); }
 
 #version { color: rgba(255, 255, 255, 0.70); font-size: 13px; }
-#update-available { color: #ff9800; font-size: 12px; }
-#update-current { color: rgba(79, 195, 247, 0.60); font-size: 12px; }
-#stats { color: rgba(255, 255, 255, 0.45); font-size: 11px; }
+#update-available { color: #ff9800; font-size: 13px; }
+#update-current { color: rgba(79, 195, 247, 0.60); font-size: 13px; }
+#stats { color: rgba(255, 255, 255, 0.80); font-size: 13px; }
 
 button.update-btn {
     background: rgba(27, 159, 255, 0.25);
@@ -168,6 +168,8 @@ progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 
 progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
 progressbar.warning trough { background-color: #3a2a00; }
 progressbar.warning progress { background-color: #ff9800; min-height: 5px; border-radius: 3px; }
+
+.controller-hint { color: rgba(255, 255, 255, 0.38); font-size: 11px; }
 """
 
 
@@ -190,6 +192,10 @@ class SplashScreen:
         self._history_labels = []     # pre-created; revealed on step advance
         self._history_index  = 0
         self._launcher_waiting = False
+        self._prompt_update_btn    = None   # set while update prompt is visible
+        self._prompt_skip_btn      = None
+        self._prompt_handler_mouse = None
+        self._prompt_handler_key   = None
 
         _log("applying CSS")
         provider = Gtk.CssProvider()
@@ -580,28 +586,84 @@ class SplashScreen:
         btn_row.set_halign(Gtk.Align.CENTER)
         self._status_content.pack_start(btn_row, False, False, 8)
 
-        update_btn = Gtk.Button(label="Update now")
-        update_btn.set_can_focus(True)
-        update_btn.get_style_context().add_class("update-btn")
+        # Helper: button with a small controller-hint label (e.g. "Ⓐ" / "Ⓑ")
+        def _make_btn(main_text, hint_char, style_class):
+            btn = Gtk.Button()
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            row.set_halign(Gtk.Align.CENTER)
+            row.pack_start(Gtk.Label(label=main_text), False, False, 0)
+            hint = Gtk.Label(label=hint_char)
+            hint.get_style_context().add_class("controller-hint")
+            row.pack_start(hint, False, False, 0)
+            btn.add(row)
+            btn.set_can_focus(True)
+            btn.get_style_context().add_class(style_class)
+            return btn
+
+        update_btn = _make_btn("Update now", "\u24b6", "update-btn")  # Ⓐ
         update_btn.connect("clicked", self._on_update_clicked)
         btn_row.pack_start(update_btn, False, False, 0)
 
-        skip_btn = Gtk.Button(label="Skip")
-        skip_btn.set_can_focus(True)
-        skip_btn.get_style_context().add_class("skip-btn")
+        skip_btn = _make_btn("Skip", "\u24b7", "skip-btn")            # Ⓑ
         skip_btn.connect("clicked", self._on_skip_clicked)
         btn_row.pack_start(skip_btn, False, False, 0)
 
         self._status_content.show_all()
-        # Grab focus so D-pad (arrows) can navigate and A/X (Space) can activate
         update_btn.grab_focus()
+
+        # Store refs so window-level handlers know which buttons to activate.
+        self._prompt_update_btn = update_btn
+        self._prompt_skip_btn   = skip_btn
+
+        # Window-level mouse handler:
+        #   Left click  (A on Steam Deck) anywhere → Update now
+        #   Right click (B on Steam Deck) anywhere → Skip
+        # This catches clicks that miss the buttons (cursor not over them).
+        # Clicks that DO land on a button still go through the button's own handler.
+        self._prompt_handler_mouse = self.win.connect(
+            "button-press-event", self._on_prompt_mouse)
+        # Window-level key handler: Escape (Y button) → Skip
+        self._prompt_handler_key = self.win.connect(
+            "key-press-event", self._on_prompt_key)
+
+    def _disconnect_prompt_handlers(self):
+        """Disconnect window-level handlers once the prompt is no longer active."""
+        for attr in ("_prompt_handler_mouse", "_prompt_handler_key"):
+            h = getattr(self, attr, None)
+            if h is not None:
+                try:
+                    self.win.disconnect(h)
+                except Exception:
+                    pass
+                setattr(self, attr, None)
+        self._prompt_update_btn = None
+        self._prompt_skip_btn   = None
+
+    def _on_prompt_mouse(self, _widget, event):
+        """Left click (A) → Update now; right click (B) → Skip."""
+        if event.button == 1 and self._prompt_update_btn:
+            self._prompt_update_btn.clicked()
+            return True
+        if event.button == 3 and self._prompt_skip_btn:
+            self._prompt_skip_btn.clicked()
+            return True
+        return False
+
+    def _on_prompt_key(self, _widget, event):
+        """Escape (Y button) → Skip."""
+        if event.keyval == Gdk.KEY_Escape and self._prompt_skip_btn:
+            self._prompt_skip_btn.clicked()
+            return True
+        return False
 
     def _on_skip_clicked(self, _btn):
         """Resume normal launch."""
+        self._disconnect_prompt_handlers()
         self._close_tid = GLib.timeout_add(500, self._close)
 
     def _on_update_clicked(self, _btn):
         """Download and install update via flatpak-spawn on host."""
+        self._disconnect_prompt_handlers()
         # Replace buttons with progress
         for child in self._status_content.get_children():
             child.destroy()

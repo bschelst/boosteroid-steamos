@@ -40,8 +40,9 @@ try:
     import gi
     gi.require_version("GLib", "2.0")
     gi.require_version("Gtk", "3.0")
+    gi.require_version("Gdk", "3.0")
     gi.require_version("GdkPixbuf", "2.0")
-    from gi.repository import GLib, Gio, Gtk, GdkPixbuf
+    from gi.repository import GLib, Gio, Gtk, Gdk, GdkPixbuf
 except ImportError as e:
     log(f"gi unavailable ({e}) — portal intercept disabled")
     sys.exit(0)
@@ -120,10 +121,15 @@ def _open_clips_browser(path):
 
 _CSS = b"""
 window {
-    background-color: #1b1b2e;
+    background: linear-gradient(180deg, #0a1628 0%, #16213e 55%, #0f3460 100%);
 }
 box {
     background-color: transparent;
+}
+#hint-card {
+    background-color: rgba(10, 22, 40, 0.75);
+    border-radius: 12px;
+    border: 1px solid rgba(27, 159, 255, 0.18);
 }
 label.title {
     color: #ffffff;
@@ -133,6 +139,42 @@ label.title {
 label.desc {
     color: #cccccc;
     font-size: 14px;
+}
+.controller-hint {
+    color: rgba(255, 255, 255, 0.38);
+    font-size: 11px;
+}
+.hint-countdown {
+    color: rgba(27, 159, 255, 0.50);
+    font-size: 11px;
+}
+button.got-it-btn {
+    background-image: none;
+    background: rgba(27, 159, 255, 0.25);
+    color: #4fc3f7;
+    border: 1px solid rgba(27, 159, 255, 0.5);
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: bold;
+    text-shadow: none;
+    box-shadow: none;
+    min-width: 140px;
+}
+button.got-it-btn:hover {
+    background: rgba(27, 159, 255, 0.40);
+    border-color: #1b9fff;
+    color: #4fc3f7;
+}
+button.got-it-btn:active {
+    background: rgba(27, 159, 255, 0.60);
+    color: white;
+    padding: 9px 20px 7px 20px;
+}
+button.got-it-btn:focus {
+    outline: 2px solid #1b9fff;
+    outline-offset: 2px;
+    background: rgba(27, 159, 255, 0.35);
 }
 button.install {
     background-image: none;
@@ -317,7 +359,7 @@ def _open_url_in_steam(uri):
         log(f"_open_url_in_steam error: {exc}")
 
 
-_HINT_SECS = 8   # auto-dismiss countdown for the login hint
+_HINT_SECS = 15  # auto-dismiss countdown for the login hint
 
 
 def _show_google_login_hint(uri):
@@ -343,12 +385,21 @@ def _show_google_login_hint(uri):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        outer.set_margin_top(28)
-        outer.set_margin_bottom(24)
-        outer.set_margin_start(32)
-        outer.set_margin_end(32)
-        win.add(outer)
+        # Card wrapper — matches #status-card border/shadow from splash screen
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        card.set_name("hint-card")
+        card.set_margin_top(20)
+        card.set_margin_bottom(20)
+        card.set_margin_start(20)
+        card.set_margin_end(20)
+        win.add(card)
+
+        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        inner.set_margin_top(28)
+        inner.set_margin_bottom(24)
+        inner.set_margin_start(32)
+        inner.set_margin_end(32)
+        card.add(inner)
 
         # Icon
         try:
@@ -358,13 +409,13 @@ def _show_google_login_hint(uri):
         except Exception:
             img = Gtk.Image.new_from_icon_name("system-users", Gtk.IconSize.DIALOG)
         img.set_margin_bottom(14)
-        outer.pack_start(img, False, False, 0)
+        inner.pack_start(img, False, False, 0)
 
         # Title
         title_lbl = Gtk.Label(label="Sign in with Google")
         title_lbl.get_style_context().add_class("title")
         title_lbl.set_margin_bottom(12)
-        outer.pack_start(title_lbl, False, False, 0)
+        inner.pack_start(title_lbl, False, False, 0)
 
         # Instruction — how to return after signing in
         desc = Gtk.Label()
@@ -376,26 +427,39 @@ def _show_google_login_hint(uri):
         desc.get_style_context().add_class("desc")
         desc.set_justify(Gtk.Justification.CENTER)
         desc.set_margin_bottom(28)
-        outer.pack_start(desc, False, False, 0)
+        inner.pack_start(desc, False, False, 0)
 
-        # "Got it" button with countdown label
+        # "Got it Ⓐ (Ns)" button
         btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         btn_box.set_halign(Gtk.Align.CENTER)
-        outer.pack_start(btn_box, False, False, 0)
+        inner.pack_start(btn_box, False, False, 0)
 
         got_it_btn = Gtk.Button()
-        got_it_btn.get_style_context().add_class("install")
+        got_it_btn.get_style_context().add_class("got-it-btn")
+        got_it_btn.set_can_focus(True)
+
+        btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        btn_content.set_halign(Gtk.Align.CENTER)
+        btn_content.pack_start(Gtk.Label(label="Got it"), False, False, 0)
+        hint_lbl = Gtk.Label(label="\u24b6")   # Ⓐ
+        hint_lbl.get_style_context().add_class("controller-hint")
+        btn_content.pack_start(hint_lbl, False, False, 0)
+        countdown_lbl = Gtk.Label()
+        countdown_lbl.get_style_context().add_class("hint-countdown")
+        btn_content.pack_start(countdown_lbl, False, False, 0)
+        got_it_btn.add(btn_content)
         btn_box.pack_start(got_it_btn, False, False, 0)
 
         win.show_all()
+        got_it_btn.grab_focus()
 
         # --- countdown + auto-open ---
         _state = {"remaining": _HINT_SECS, "tid": None, "opened": False}
 
-        def _update_label():
-            got_it_btn.set_label(f"Got it  ({_state['remaining']}s)")
+        def _update_countdown():
+            countdown_lbl.set_label(f"({_state['remaining']}s)")
 
-        _update_label()
+        _update_countdown()
 
         def _proceed(*_):
             if _state["opened"]:
@@ -410,17 +474,36 @@ def _show_google_login_hint(uri):
 
         def _tick():
             _state["remaining"] -= 1
-            _update_label()
+            _update_countdown()
             if _state["remaining"] <= 0:
                 _state["tid"] = None
                 _proceed()
-                return False          # stop timer
-            return True              # keep ticking
+                return False
+            return True
 
         _state["tid"] = GLib.timeout_add(1000, _tick)
         got_it_btn.connect("clicked", _proceed)
-        # If the window is closed by other means (e.g. Alt+F4), still open the browser
         win.connect("destroy", _proceed)
+
+        # Controller support:
+        #   A button = left click (button 1) = proceed
+        #   B button = right click (button 3) = proceed
+        def _on_mouse(_widget, event):
+            if event.button in (1, 3):
+                _proceed()
+                return True
+            return False
+
+        # Keyboard: Return/Space/Escape all confirm
+        def _on_key(_widget, event):
+            if event.keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter,
+                                Gdk.KEY_space, Gdk.KEY_Escape):
+                _proceed()
+                return True
+            return False
+
+        win.connect("button-press-event", _on_mouse)
+        win.connect("key-press-event", _on_key)
 
     except Exception as exc:
         log(f"login hint error: {exc}")

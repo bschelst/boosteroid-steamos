@@ -58,6 +58,8 @@ modules:
     buildsystem: simple
     build-commands:
       - gcc src/force_fullscreen.c -lX11 -o /app/bin/boosteroid-fullscreen
+      # ICMP preload: redirect SOCK_RAW→SOCK_DGRAM so Net::Pinger works in Flatpak
+      - gcc -shared -fPIC -o /app/lib/icmp_preload.so src/icmp_preload.c -ldl
       # pkexec shim — Boosteroid's updater calls pkexec to copy with root privileges.
       # Inside the Flatpak sandbox no escalation is needed; just run the command.
       # If cp fails ("Text file busy" on running binary), unlink the target first

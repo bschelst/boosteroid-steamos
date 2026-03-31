@@ -203,6 +203,13 @@ sleep 0.3   # let the service register before Boosteroid starts
 # Add Boosteroid's bundled libraries to the search path.
 export LD_LIBRARY_PATH="${LIB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 
+# ICMP preload: Flatpak blocks SOCK_RAW (no CAP_NET_RAW), but SOCK_DGRAM ICMP
+# works when the host kernel allows unprivileged ping (default on SteamOS).
+# This lets Boosteroid's Net::Pinger measure latency to data center gateways.
+if [ -f /app/lib/icmp_preload.so ]; then
+    export LD_PRELOAD="/app/lib/icmp_preload.so${LD_PRELOAD:+:${LD_PRELOAD}}"
+fi
+
 # Wait for the splash to finish before starting Boosteroid.
 # Boosteroid immediately maps a fullscreen window and Gamescope switches
 # focus to it, hiding the splash — so we must launch only after splash exits.

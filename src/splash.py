@@ -616,10 +616,9 @@ class SplashScreen:
         self._prompt_skip_btn   = skip_btn
 
         # Window-level mouse handler:
-        #   Left click  (A on Steam Deck) anywhere → Update now
-        #   Right click (B on Steam Deck) anywhere → Skip
-        # This catches clicks that miss the buttons (cursor not over them).
-        # Clicks that DO land on a button still go through the button's own handler.
+        #   Left click  (A on Steam Deck) → activate focused button
+        #   Right click (B on Steam Deck) → Skip
+        # D-pad moves focus between Update/Skip; A confirms the focused button.
         self._prompt_handler_mouse = self.win.connect(
             "button-press-event", self._on_prompt_mouse)
         # Window-level key handler: Escape (Y button) → Skip
@@ -640,10 +639,17 @@ class SplashScreen:
         self._prompt_skip_btn   = None
 
     def _on_prompt_mouse(self, _widget, event):
-        """Left click (A) → Update now; right click (B) → Skip."""
-        if event.button == 1 and self._prompt_update_btn:
-            self._prompt_update_btn.clicked()
-            return True
+        """Left click (A) → activate focused button; right click (B) → Skip."""
+        if event.button == 1:
+            # A button: activate whichever button has keyboard focus.
+            focused = self.win.get_focus()
+            if isinstance(focused, Gtk.Button):
+                focused.clicked()
+                return True
+            # No button focused — default to Update.
+            if self._prompt_update_btn:
+                self._prompt_update_btn.clicked()
+                return True
         if event.button == 3 and self._prompt_skip_btn:
             self._prompt_skip_btn.clicked()
             return True

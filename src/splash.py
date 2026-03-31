@@ -544,6 +544,12 @@ class SplashScreen:
             latest = data.get("latest", "")
             download_url = data.get("download_url", "")
             _log(f"update check: current=v{self._current_version} latest={latest}")
+            # Verify the .flatpak asset is actually available (CI may still be building).
+            asset_url = _DOWNLOAD_URL_TEMPLATE.format(tag=latest)
+            head_req = urllib.request.Request(asset_url, method="HEAD",
+                headers={"User-Agent": f"boosteroid-steamos/{self._current_version}"})
+            urllib.request.urlopen(head_req, timeout=5)
+            _log("update asset available")
             GLib.idle_add(self._on_update_result, latest, download_url)
         except Exception as e:
             _log(f"update check failed: {e}")

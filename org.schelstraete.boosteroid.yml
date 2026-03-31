@@ -58,6 +58,9 @@ modules:
     buildsystem: simple
     build-commands:
       - gcc src/force_fullscreen.c -lX11 -o /app/bin/boosteroid-fullscreen
+      # pkexec shim — Boosteroid's updater calls pkexec to copy with root privileges.
+      # Inside the Flatpak sandbox no escalation is needed; just run the command.
+      - printf '#!/bin/bash\nexec "$@"\n' > /app/bin/pkexec && chmod 755 /app/bin/pkexec
       - install -Dm644 version.txt /app/share/boosteroid/version
       - install -Dm755 boosteroid-launcher.sh /app/bin/boosteroid-launcher.sh
       - install -Dm755 src/splash.py /app/lib/boosteroid/splash.py

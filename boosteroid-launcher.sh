@@ -110,16 +110,6 @@ echo "[xdg-open] xdg-open exit=$?" >> $HOME/logs/boosteroid.log
 EOF
 chmod +x "${_OVERRIDE_BIN}/xdg-open"
 
-# pkexec shim — Boosteroid's built-in updater calls pkexec to copy the updated
-# binary with root privileges.  Inside the Flatpak sandbox pkexec does not exist,
-# but the user already owns the data directory so no escalation is needed.
-cat > "${_OVERRIDE_BIN}/pkexec" << 'EOF'
-#!/bin/bash
-echo "[pkexec shim] running without privilege escalation: $*" >> $HOME/logs/boosteroid.log
-exec "$@"
-EOF
-chmod +x "${_OVERRIDE_BIN}/pkexec"
-
 export PATH="${_OVERRIDE_BIN}:${PATH}"
 
 # ── Wait for any previous Boosteroid instance to exit ────────────────────────

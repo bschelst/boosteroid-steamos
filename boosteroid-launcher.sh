@@ -264,7 +264,15 @@ echo "${BOOSTEROID_PID}" > "${STATUS_FILE}"
 echo "==> Boosteroid started (PID ${BOOSTEROID_PID})"
 echo "$(date -Iseconds),start,${VERSION},0,${DECODE_FLAG:--none-}" >> "$STATS_FILE"
 
-wait "${BOOSTEROID_PID}" || true
+wait "${BOOSTEROID_PID}"
+EXIT_CODE=$?
+
+# Boosteroid's built-in updater replaces the binary on disk while the old process
+# is still alive, causing a segfault (signal 139).  The update succeeded — the
+# user just needs to relaunch.
+if [ "$EXIT_CODE" -eq 139 ] && [ -f /tmp/BoosteroidUpdater ]; then
+    echo "==> Boosteroid updated itself. Please relaunch to use the new version."
+fi
 
 # Write session end if we reach here (clean exit — rare in Game Mode).
 SESSION_END=$(date +%s)

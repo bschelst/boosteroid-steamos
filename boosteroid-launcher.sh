@@ -91,6 +91,8 @@ fi
 # Fallback: host xdg-open works in Desktop Mode where a normal browser is running.
 _OVERRIDE_BIN="${XDG_RUNTIME_DIR}/boosteroid-bin"
 mkdir -p "${_OVERRIDE_BIN}"
+# Clean up stale pkexec shim from older versions — /app/bin/pkexec handles this now.
+rm -f "${_OVERRIDE_BIN}/pkexec"
 cat > "${_OVERRIDE_BIN}/xdg-open" << 'EOF'
 #!/bin/bash
 URL="$1"

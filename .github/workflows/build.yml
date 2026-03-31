@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Flatpak tools
         run: |
@@ -28,7 +28,7 @@ jobs:
             https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Cache Flatpak runtime
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.local/share/flatpak
           key: flatpak-${{ runner.os }}-25.08-${{ hashFiles('org.schelstraete.boosteroid.yml') }}
@@ -45,8 +45,13 @@ jobs:
         env:
           REF_NAME: ${{ github.ref_name }}
         run: |
-          printf '%s\n' "$REF_NAME" > version.txt
-          VERSION="${REF_NAME#v}"
+          # For tag builds, use the tag name as version; for branch builds, use version.txt.
+          if [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            VERSION="${REF_NAME#v}"
+            printf '%s\n' "$VERSION" > version.txt
+          else
+            VERSION=$(cat version.txt | tr -d '[:space:]')
+          fi
           # M-001: Validate version format before using in sed to prevent pattern injection.
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "ERROR: Invalid version format: $VERSION" >&2; exit 1
@@ -79,7 +84,7 @@ jobs:
           sha256sum org.schelstraete.boosteroid.flatpak > org.schelstraete.boosteroid.flatpak.sha256
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: boosteroid-flatpak
           path: org.schelstraete.boosteroid.flatpak

@@ -16,9 +16,14 @@ typedef int (*real_socket_t)(int, int, int);
 int socket(int domain, int type, int protocol) {
     real_socket_t real_socket = (real_socket_t)dlsym(RTLD_NEXT, "socket");
 
-    /* Only intercept: AF_INET + SOCK_RAW + ICMP */
-    if (domain == AF_INET && type == SOCK_RAW && protocol == IPPROTO_ICMP) {
-        int fd = real_socket(domain, SOCK_DGRAM, protocol);
+    /* Only intercept: AF_INET + SOCK_RAW + ICMP.
+     * Mask out flag bits (SOCK_CLOEXEC, SOCK_NONBLOCK) that callers
+     * OR into the type argument — preserve them in the replacement call. */
+    int base_type = type & 0xF;
+    int flags     = type & ~0xF;
+
+    if (domain == AF_INET && base_type == SOCK_RAW && protocol == IPPROTO_ICMP) {
+        int fd = real_socket(domain, SOCK_DGRAM | flags, protocol);
         if (fd >= 0)
             return fd;
         /* Fall through to original call if SOCK_DGRAM also fails */

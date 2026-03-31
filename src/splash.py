@@ -544,6 +544,12 @@ class SplashScreen:
             latest = data.get("latest", "")
             download_url = data.get("download_url", "")
             _log(f"update check: current=v{self._current_version} latest={latest}")
+            # Only proceed if the remote version is actually newer.
+            current_ver = self._parse_version(self._current_version)
+            latest_ver = self._parse_version(latest.lstrip("v"))
+            if latest_ver <= current_ver:
+                _log("already up to date")
+                return
             # Verify the .flatpak asset is actually available (CI may still be building).
             asset_url = _DOWNLOAD_URL_TEMPLATE.format(tag=latest)
             head_req = urllib.request.Request(asset_url, method="HEAD",

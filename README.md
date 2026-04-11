@@ -178,6 +178,43 @@ flatpak run org.schelstraete.boosteroid -s        # software decoder
 
 ---
 
+## 🎞️ Force codec (H.264 / H.265) — experimental
+
+The Boosteroid Linux client tends to default to **H.264** even on hardware that can decode HEVC. The Steam Deck APU (AMD VCN 3.0) has full hardware HEVC decode, so forcing H.265 can lower bitrate at the same perceived quality.
+
+Two opt-in environment variables are honored by the launcher:
+
+| Env var | Effect |
+|---|---|
+| `BOOSTEROID_FORCE_H265=1` | Pass `-h265` to the Boosteroid binary (force HEVC) |
+| `BOOSTEROID_FORCE_H264=1` | Pass `-h264` to the Boosteroid binary (force H.264) |
+
+Set them via Steam **Launch Options**:
+
+```
+run --env=BOOSTEROID_FORCE_H265=1 org.schelstraete.boosteroid
+```
+
+Or persistently with `flatpak override` (applies to every launch, including from Steam):
+
+```bash
+flatpak override --user --env=BOOSTEROID_FORCE_H265=1 org.schelstraete.boosteroid
+flatpak override --user --reset org.schelstraete.boosteroid    # back to defaults
+```
+
+After launching a stream, check what was actually negotiated:
+
+```bash
+grep -E "H265 codec/parser opened|H264 codec/parser opened" ~/logs/boosteroid.log
+```
+
+- **Two `codec/parser opened` lines** (one `H264` + one `H265`) = the stream is running H.265
+- **One line only** (`H264`) = the stream is running H.264 (the H.264 parser is used for both the startup probe and the stream, so no second line appears)
+
+> **Note:** these flags are undocumented by Boosteroid and were discovered by inspecting the binary. They may stop working in a future Boosteroid client update.
+
+---
+
 ## 🗑️ Uninstall
 
 ```bash

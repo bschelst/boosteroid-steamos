@@ -52,8 +52,10 @@ CHECK_HOST    = "1.1.1.1"
 CHECK_PORT    = 53
 CHECK_TIMEOUT = 3.0
 
-LOGO_PATH  = "/app/share/boosteroid/grid/splash-logo.png"
-LOGO_WIDTH = 800
+LOGO_PATH = "/app/share/boosteroid/grid/splash-logo.png"
+# LOGO_WIDTH_BASE is the unscaled logo width at the 1080p design target.
+# Actual width is LOGO_WIDTH_BASE * UI scale factor (see _compute_ui_scale).
+LOGO_WIDTH_BASE = 800
 
 GATEWAY_VERSION_URL = "https://boosteroid.schelstraete.org/api/version"
 GITHUB_REPO_URL     = "https://github.com/bschelst/boosteroid-steamos"
@@ -83,94 +85,134 @@ STEPS = [
 
 DOTS = ["", ".", "..", "..."]
 
-CSS = b"""
-window {
+def _compute_ui_scale() -> float:
+    """Scale factor for splash UI, pinned to a 1080p design baseline.
+
+    Queries the default Gdk.Screen after Gtk.init_check() has run. Returns
+    1.0 for 1080p or smaller (so the Steam Deck's 1280x800 handheld panel
+    stays identical to the hand-tuned sizes) and scales up linearly with
+    the display height, so a docked 4K panel (2160 tall) gets a 2.0x scale.
+    """
+    try:
+        screen = Gdk.Screen.get_default()
+        h = screen.get_height() if screen else 0
+    except Exception:
+        h = 0
+    if not h or h <= 0:
+        return 1.0
+    return max(1.0, round(h / 1080.0, 2))
+
+
+def _make_css(scale: float) -> bytes:
+    """Build the GTK3 CSS blob with all pixel sizes multiplied by `scale`.
+
+    CSS MUST stay ASCII — GTK3's load_from_data() throws on non-ASCII bytes.
+    Unicode characters live in Python strings (labels), never in CSS.
+    """
+
+    def px(v: float) -> int:
+        return max(1, int(round(v * scale)))
+
+    css = f"""
+window {{
     background: linear-gradient(180deg, #0a1628 0%, #16213e 55%, #0f3460 100%);
-}
+}}
 
-#accent {
+#accent {{
     background: linear-gradient(90deg, #0a1628, #1b9fff 35%, #1b9fff 65%, #0a1628);
-    min-height: 4px;
-}
+    min-height: {px(4)}px;
+}}
 
-#status-card {
+#status-card {{
     background-color: rgba(10, 22, 40, 0.75);
-    border-radius: 12px;
+    border-radius: {px(12)}px;
     border: 1px solid rgba(27, 159, 255, 0.18);
-}
+}}
 
-#step-done { color: rgba(79, 195, 247, 0.65); font-size: 11px; }
+#step-done {{ color: rgba(79, 195, 247, 0.65); font-size: {px(16)}px; }}
 
-#status { color: #4fc3f7; font-size: 13px; }
-#status.warning { color: #ff9800; font-weight: bold; font-size: 14px; }
+#status {{ color: #4fc3f7; font-size: {px(20)}px; }}
+#status.warning {{ color: #ff9800; font-weight: bold; font-size: {px(22)}px; }}
 
-#countdown { color: rgba(27, 159, 255, 0.50); font-size: 11px; }
-#countdown.warning { color: rgba(255, 152, 0, 0.60); }
+#countdown {{ color: rgba(27, 159, 255, 0.50); font-size: {px(16)}px; }}
+#countdown.warning {{ color: rgba(255, 152, 0, 0.60); }}
 
-#version { color: rgba(255, 255, 255, 0.70); font-size: 13px; }
-#update-available { color: #ff9800; font-size: 13px; }
-#update-current { color: rgba(79, 195, 247, 0.60); font-size: 13px; }
-#stats { color: rgba(255, 255, 255, 0.80); font-size: 13px; }
+#version {{ color: rgba(255, 255, 255, 0.70); font-size: {px(16)}px; }}
+#update-available {{ color: #ff9800; font-size: {px(16)}px; }}
+#update-current {{ color: rgba(79, 195, 247, 0.60); font-size: {px(16)}px; }}
+#stats {{ color: rgba(255, 255, 255, 0.80); font-size: {px(16)}px; }}
 
-button.update-btn {
+#codec-badge {{
+    color: #ffcc00;
+    font-size: {px(15)}px;
+    font-weight: bold;
+    padding: {px(6)}px {px(14)}px;
+    background-color: rgba(255, 204, 0, 0.12);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 204, 0, 0.45);
+    margin-top: {px(10)}px;
+}}
+
+button.update-btn {{
     background: rgba(27, 159, 255, 0.25);
     color: #4fc3f7;
     border: 1px solid rgba(27, 159, 255, 0.5);
-    border-radius: 8px;
-    padding: 8px 20px;
-    font-size: 13px;
+    border-radius: {px(8)}px;
+    padding: {px(10)}px {px(24)}px;
+    font-size: {px(17)}px;
     font-weight: bold;
     text-shadow: none;
     box-shadow: none;
-}
-button.update-btn:hover {
+}}
+button.update-btn:hover {{
     background: rgba(27, 159, 255, 0.40);
     border-color: #1b9fff;
     color: #4fc3f7;
-}
-button.update-btn:active {
+}}
+button.update-btn:active {{
     background: rgba(27, 159, 255, 0.60);
     border-color: #4fc3f7;
     color: white;
-    padding: 9px 20px 7px 20px;
-}
-button.skip-btn {
+    padding: {px(11)}px {px(24)}px {px(9)}px {px(24)}px;
+}}
+button.skip-btn {{
     background: rgba(255, 255, 255, 0.06);
     color: rgba(255, 255, 255, 0.50);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    padding: 8px 20px;
-    font-size: 13px;
+    border-radius: {px(8)}px;
+    padding: {px(10)}px {px(24)}px;
+    font-size: {px(17)}px;
     text-shadow: none;
     box-shadow: none;
-}
-button.skip-btn:hover {
+}}
+button.skip-btn:hover {{
     background: rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 0.70);
-}
-button.skip-btn:active {
+}}
+button.skip-btn:active {{
     background: rgba(255, 255, 255, 0.20);
     color: white;
-    padding: 9px 20px 7px 20px;
-}
-button.update-btn:focus, button.skip-btn:focus {
-    outline: 2px solid #1b9fff;
-    outline-offset: 2px;
-}
-button.update-btn:focus {
+    padding: {px(11)}px {px(24)}px {px(9)}px {px(24)}px;
+}}
+button.update-btn:focus, button.skip-btn:focus {{
+    outline: {px(2)}px solid #1b9fff;
+    outline-offset: {px(2)}px;
+}}
+button.update-btn:focus {{
     background: rgba(27, 159, 255, 0.35);
-}
-button.skip-btn:focus {
+}}
+button.skip-btn:focus {{
     background: rgba(255, 255, 255, 0.10);
-}
+}}
 
-progressbar trough { background-color: #0f3460; min-height: 5px; border-radius: 3px; }
-progressbar progress { background-color: #1b9fff; min-height: 5px; border-radius: 3px; }
-progressbar.warning trough { background-color: #3a2a00; }
-progressbar.warning progress { background-color: #ff9800; min-height: 5px; border-radius: 3px; }
+progressbar trough {{ background-color: #0f3460; min-height: {px(5)}px; border-radius: {px(3)}px; }}
+progressbar progress {{ background-color: #1b9fff; min-height: {px(5)}px; border-radius: {px(3)}px; }}
+progressbar.warning trough {{ background-color: #3a2a00; }}
+progressbar.warning progress {{ background-color: #ff9800; min-height: {px(5)}px; border-radius: {px(3)}px; }}
 
-.controller-hint { color: rgba(255, 255, 255, 0.38); font-size: 11px; }
+.controller-hint {{ color: rgba(255, 255, 255, 0.38); font-size: {px(14)}px; }}
 """
+    return css.encode("ascii")
 
 
 class SplashScreen:
@@ -197,14 +239,23 @@ class SplashScreen:
         self._prompt_handler_mouse = None
         self._prompt_handler_key   = None
 
+        self._ui_scale = _compute_ui_scale()
+        self._logo_width = int(round(LOGO_WIDTH_BASE * self._ui_scale))
+        _log(f"UI scale: {self._ui_scale}x (logo {self._logo_width}px)")
+
         _log("applying CSS")
         provider = Gtk.CssProvider()
-        provider.load_from_data(CSS)
+        provider.load_from_data(_make_css(self._ui_scale))
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(),
             provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
+
+        def _s(v: float) -> int:
+            """Shortcut for int(v * ui_scale) used across widget sizing."""
+            return max(1, int(round(v * self._ui_scale)))
+        self._s = _s
 
         _log("creating window")
         self.win = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
@@ -225,6 +276,8 @@ class SplashScreen:
         # ── top spacer ────────────────────────────────────────────────────
         root.pack_start(Gtk.Box(), True, True, 0)
 
+        s = self._s
+
         # ── logo with rounded corners + shadow (Cairo-drawn) ──────────────
         logo_widget = self._make_logo()
         if logo_widget:
@@ -232,14 +285,14 @@ class SplashScreen:
             logo_hbox.pack_start(Gtk.Box(), True, True, 0)
             logo_hbox.pack_start(logo_widget, False, False, 0)
             logo_hbox.pack_start(Gtk.Box(), True, True, 0)
-            root.pack_start(logo_hbox, False, False, 20)
+            root.pack_start(logo_hbox, False, False, s(20))
 
         # ── gap ───────────────────────────────────────────────────────────
         gap = Gtk.Box()
-        gap.set_size_request(-1, 24)
+        gap.set_size_request(-1, s(24))
         root.pack_start(gap, False, False, 0)
 
-        # ── status card (frosted glass, centred 700 px wide) ─────────────
+        # ── status card (frosted glass, centred) ─────────────────────────
         bar_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         root.pack_start(bar_hbox, False, False, 0)
         bar_hbox.pack_start(Gtk.Box(), True, True, 0)
@@ -253,16 +306,16 @@ class SplashScreen:
         # Inner content: margins provide frosted-glass padding reliably
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self._status_content = content
-        content.set_size_request(700, -1)
-        content.set_margin_top(18)
-        content.set_margin_bottom(18)
-        content.set_margin_start(24)
-        content.set_margin_end(24)
+        content.set_size_request(s(840), -1)
+        content.set_margin_top(s(18))
+        content.set_margin_bottom(s(18))
+        content.set_margin_start(s(24))
+        content.set_margin_end(s(24))
         card.add(content)
 
         # Completed step history — labels pre-created hidden; revealed (not added)
         # at runtime to avoid mid-animation layout thrash that causes Gamescope flashes.
-        self._history_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        self._history_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=s(2))
         content.pack_start(self._history_box, False, False, 0)
         for _, _, text in STEPS:
             lbl = Gtk.Label(label=f"\u2713  {text}")
@@ -273,11 +326,11 @@ class SplashScreen:
             self._history_labels.append(lbl)
 
         # Status row: spinner + label
-        status_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        content.pack_start(status_row, False, False, 10)
+        status_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=s(8))
+        content.pack_start(status_row, False, False, s(10))
 
         self.spinner = Gtk.Spinner()
-        self.spinner.set_size_request(14, 14)
+        self.spinner.set_size_request(s(14), s(14))
         self.spinner.start()
         status_row.pack_start(self.spinner, False, False, 0)
 
@@ -287,7 +340,7 @@ class SplashScreen:
         status_row.pack_start(self.status_label, False, False, 0)
 
         # Progress bar row: bar + countdown label
-        bar_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        bar_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=s(8))
         content.pack_start(bar_row, False, False, 0)
 
         self.bar = Gtk.ProgressBar()
@@ -301,15 +354,26 @@ class SplashScreen:
         self._countdown_label.set_xalign(1.0)
         bar_row.pack_start(self._countdown_label, False, False, 0)
 
+        # ── codec / HDR override badge (only shown when env var is set) ──
+        badge_text = self._get_override_badge()
+        if badge_text:
+            badge_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            content.pack_start(badge_row, False, False, 0)
+            badge_row.pack_start(Gtk.Box(), True, True, 0)
+            badge = Gtk.Label(label=badge_text)
+            badge.set_name("codec-badge")
+            badge_row.pack_start(badge, False, False, 0)
+            badge_row.pack_start(Gtk.Box(), True, True, 0)
+
         # ── bottom spacer ─────────────────────────────────────────────────
         root.pack_start(Gtk.Box(), True, True, 0)
 
         # ── bottom row: version (left) · update (center) · stats (right) ──
         self._current_version = self._read_version()
         bottom_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-        bottom_row.set_margin_start(40)
-        bottom_row.set_margin_end(40)
-        root.pack_start(bottom_row, False, False, 12)
+        bottom_row.set_margin_start(s(40))
+        bottom_row.set_margin_end(s(40))
+        root.pack_start(bottom_row, False, False, s(12))
 
         ver_label = Gtk.Label(label="")
         ver_label.set_name("version")
@@ -356,6 +420,20 @@ class SplashScreen:
             return ""
 
     @staticmethod
+    def _get_override_badge() -> str:
+        """Return a user-visible badge string if a codec/HDR/4K env var is set."""
+        parts = []
+        if os.environ.get("BOOSTEROID_FORCE_H265") == "1":
+            parts.append("\u26a1  Forcing H.265 (HEVC)")
+        elif os.environ.get("BOOSTEROID_FORCE_H264") == "1":
+            parts.append("\u26a1  Forcing H.264")
+        if os.environ.get("BOOSTEROID_FORCE_4K") == "1":
+            parts.append("\U0001f5a5  4K mode")
+        if os.environ.get("BOOSTEROID_TRY_HDR") == "1":
+            parts.append("\U0001f308  HDR (best-effort)")
+        return "    ".join(parts)
+
+    @staticmethod
     def _fmt_duration(seconds):
         m = seconds // 60
         if m >= 60:
@@ -400,12 +478,12 @@ class SplashScreen:
     def _make_logo(self):
         try:
             pb_orig = GdkPixbuf.Pixbuf.new_from_file(LOGO_PATH)
-            orig_w  = pb_orig.get_width()
-            orig_h  = pb_orig.get_height()
-            new_h   = int(orig_h * LOGO_WIDTH / orig_w)
-            pb      = pb_orig.scale_simple(LOGO_WIDTH, new_h,
-                                           GdkPixbuf.InterpType.BILINEAR)
-            _log(f"logo loaded ({orig_w}x{orig_h} -> {LOGO_WIDTH}x{new_h})")
+            orig_w = pb_orig.get_width()
+            orig_h = pb_orig.get_height()
+            target_w = self._logo_width
+            new_h = int(orig_h * target_w / orig_w)
+            pb = pb_orig.scale_simple(target_w, new_h, GdkPixbuf.InterpType.BILINEAR)
+            _log(f"logo loaded ({orig_w}x{orig_h} -> {target_w}x{new_h})")
             return Gtk.Image.new_from_pixbuf(pb)
         except Exception as e:
             _log(f"logo not loaded: {e}")

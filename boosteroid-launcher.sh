@@ -81,6 +81,51 @@ if grep -q "0x1002" /sys/class/drm/renderD128/device/vendor 2>/dev/null; then
     DECODE_FLAG="-vaapi"
 fi
 
+# ── Codec / HDR / resolution opt-in flags (experimental) ────────────────────
+# Boosteroid's hidden CLI flags discovered via `strings` on the binary:
+#   -h264   force h264 codec
+#   -h265   force h265 codec (HEVC — Steam Deck VCN3 supports HW decode)
+#   -4k     advertise 4K capability to the server (useful when Gamescope
+#           composition is set to 1440p/4K on a docked Deck)
+# Pass via Steam launch options, e.g.:
+#   run --env=BOOSTEROID_FORCE_H265=1 --env=BOOSTEROID_FORCE_4K=1 org.schelstraete.boosteroid
+# Or persistently:
+#   flatpak override --user --env=BOOSTEROID_FORCE_H265=1 org.schelstraete.boosteroid
+#
+# HDR is auto-detected internally (LinuxPlatform::hdrSupported); the binary
+# does NOT expose an -hdr flag. BOOSTEROID_TRY_HDR=1 is best-effort: it sets
+# upstream Wayland/Vulkan/Proton HDR env vars and forces -h265 (HDR streams
+# are HEVC-only). Whether the Boosteroid client actually advertises HDR to
+# the server depends on Qt6 RHI capability detection — see ~/logs/boosteroid.log
+# for `HDR support: true|false` after launch.
+CODEC_FLAG=""
+if [ "${BOOSTEROID_FORCE_H265:-0}" = "1" ]; then
+    CODEC_FLAG="-h265"
+    echo "==> BOOSTEROID_FORCE_H265=1: forcing HEVC codec"
+elif [ "${BOOSTEROID_FORCE_H264:-0}" = "1" ]; then
+    CODEC_FLAG="-h264"
+    echo "==> BOOSTEROID_FORCE_H264=1: forcing H.264 codec"
+fi
+
+RES_FLAG=""
+if [ "${BOOSTEROID_FORCE_4K:-0}" = "1" ]; then
+    RES_FLAG="-4k"
+    echo "==> BOOSTEROID_FORCE_4K=1: advertising 4K capability to server"
+fi
+
+if [ "${BOOSTEROID_TRY_HDR:-0}" = "1" ]; then
+    echo "==> BOOSTEROID_TRY_HDR=1: best-effort HDR (no native Boosteroid flag exists)"
+    export ENABLE_HDR_WSI=1
+    export DXVK_HDR=1
+    export PROTON_ENABLE_HDR=1
+    export QT_RHI_HDR=scrgb
+    # HDR streams are always HEVC; force -h265 so the client doesn't downshift.
+    if [ -z "${CODEC_FLAG}" ]; then
+        CODEC_FLAG="-h265"
+        echo "==> BOOSTEROID_TRY_HDR=1: forcing -h265 (HDR requires HEVC)"
+    fi
+fi
+
 # ── Google login (xdg-open via host) ────────────────────────────────────────
 # In Game Mode (Gamescope) there is no traditional desktop environment, so the
 # Flatpak portal and host xdg-open may not work reliably.  The most reliable
@@ -254,15 +299,15 @@ _close_previous_session
 # shellcheck disable=SC2086
 if [ "${DEBUG:-0}" = "1" ]; then
     echo "==> Debug mode ON: [debug] lines will appear in log"
-    "${BINARY}" ${DECODE_FLAG} "$@" &
+    "${BINARY}" ${DECODE_FLAG} ${CODEC_FLAG} ${RES_FLAG} "$@" &
 else
     # Process substitution keeps $! as Boosteroid's PID (not grep's).
-    "${BINARY}" ${DECODE_FLAG} "$@" > >(grep --line-buffered -v '\[debug\]') 2>&1 &
+    "${BINARY}" ${DECODE_FLAG} ${CODEC_FLAG} ${RES_FLAG} "$@" > >(grep --line-buffered -v '\[debug\]') 2>&1 &
 fi
 BOOSTEROID_PID=$!
 echo "${BOOSTEROID_PID}" > "${STATUS_FILE}"
-echo "==> Boosteroid started (PID ${BOOSTEROID_PID})"
-echo "$(date -Iseconds),start,${VERSION},0,${DECODE_FLAG:--none-}" >> "$STATS_FILE"
+echo "==> Boosteroid started (PID ${BOOSTEROID_PID}) flags: ${DECODE_FLAG} ${CODEC_FLAG} ${RES_FLAG}"
+echo "$(date -Iseconds),start,${VERSION},0,${DECODE_FLAG:--none-}${CODEC_FLAG:+ ${CODEC_FLAG}}${RES_FLAG:+ ${RES_FLAG}}" >> "$STATS_FILE"
 
 wait "${BOOSTEROID_PID}"
 EXIT_CODE=$?

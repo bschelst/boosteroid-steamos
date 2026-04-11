@@ -86,21 +86,28 @@ STEPS = [
 DOTS = ["", ".", "..", "..."]
 
 def _compute_ui_scale() -> float:
-    """Scale factor for splash UI, pinned to a 1080p design baseline.
+    """Scale factor for splash UI, baselined on the Steam Deck handheld panel.
 
-    Queries the default Gdk.Screen after Gtk.init_check() has run. Returns
-    1.0 for 1080p or smaller (so the Steam Deck's 1280x800 handheld panel
-    stays identical to the hand-tuned sizes) and scales up linearly with
-    the display height, so a docked 4K panel (2160 tall) gets a 2.0x scale.
+    The splash was hand-tuned to fill the 1280x800 LCD panel at scale=1.0.
+    Any other resolution (docked 1080p, 4K TV, or the 1280x720 that Gamescope
+    uses on "default" docked display settings) scales proportionally from
+    that baseline, using the smaller of the two axes so no content clips.
+
+    Caps:
+      - 0.6 floor so tiny misconfigured displays stay readable
+      - 2.5 ceiling so 4K+ panels don't get absurd font sizes
     """
     try:
         screen = Gdk.Screen.get_default()
+        w = screen.get_width() if screen else 0
         h = screen.get_height() if screen else 0
     except Exception:
-        h = 0
-    if not h or h <= 0:
+        w = h = 0
+    if not w or not h or w <= 0 or h <= 0:
         return 1.0
-    return max(1.0, round(h / 1080.0, 2))
+    scale_w = w / 1280.0
+    scale_h = h / 800.0
+    return max(0.6, min(scale_w, scale_h, 2.5))
 
 
 def _make_css(scale: float) -> bytes:

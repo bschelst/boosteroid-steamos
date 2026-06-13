@@ -58,6 +58,18 @@ esac
 INSTALL_DIR="${XDG_DATA_HOME}/boosteroid"
 BINARY="${INSTALL_DIR}/opt/BoosteroidGamesS.R.L./bin/Boosteroid"
 LIB_DIR="${INSTALL_DIR}/opt/BoosteroidGamesS.R.L./lib"
+CACHE_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/Boosteroid Games S.R.L./Boosteroid"
+
+# ── Neutralise Boosteroid's broken auto-updater ─────────────────────────────
+# Boosteroid has a version ping-pong bug: v1.11.15 downloads a flatpak containing
+# v1.10.14, and vice versa, looping forever.  Each download triggers an exit.
+# Fix: replace the download target with a FIFO (named pipe).  The binary's
+# download thread blocks on open() waiting for a reader that never comes —
+# no error dialog, no exit, the app runs normally.
+if flatpak-spawn --host flatpak info com.boosteroid.Client > /dev/null 2>&1; then
+    echo "==> Cleaning up com.boosteroid.Client (Boosteroid auto-updater artifact)..."
+    flatpak-spawn --host flatpak uninstall --user -y com.boosteroid.Client 2>/dev/null || true
+fi
 
 # ── First-run install ────────────────────────────────────────────────────────
 if [ ! -f "${BINARY}" ]; then
@@ -288,6 +300,31 @@ _close_previous_session() {
 }
 _close_previous_session
 
+# ── Session keepalive window ─────────────────────────────────────────────────
+# A minimal dark window that sits BEHIND Boosteroid.  Keeps the Gamescope
+# session alive when Boosteroid exits for an auto-update.  Invisible during
+# normal gameplay (Boosteroid is fullscreen on top).  Killed immediately on
+# normal exit so the user never sees it.
+_KEEPALIVE_PID=""
+if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    python3 -c "
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk
+css = Gtk.CssProvider()
+css.load_from_data(b'window { background: #1a1a2e; }')
+Gtk.StyleContext.add_provider_for_screen(
+    Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+w = Gtk.Window()
+w.set_decorated(False)
+w.fullscreen()
+w.show_all()
+Gtk.main()
+" &
+    _KEEPALIVE_PID=$!
+    sleep 0.3
+fi
+
 # ── Filter debug output unless DEBUG=1 ──────────────────────────────────────
 # By default [debug] lines from Boosteroid are stripped from the log.
 # To keep them, add --env=DEBUG=1 to Steam launch options:
@@ -319,14 +356,107 @@ if [ "$EXIT_CODE" -eq 139 ] && [ -f /tmp/BoosteroidUpdater ]; then
     echo "==> Boosteroid updated itself. Please relaunch to use the new version."
 fi
 
-# Write session end if we reach here (clean exit — rare in Game Mode).
+# Calculate session duration now — needed by the update block below.
 SESSION_END=$(date +%s)
 SESSION_START_TS=$(tail -1 "$STATS_FILE" | cut -d',' -f1)
 SESSION_START_EPOCH=$(date -d "$SESSION_START_TS" +%s 2>/dev/null || echo "$SESSION_END")
 SESSION_DUR=$((SESSION_END - SESSION_START_EPOCH))
-echo "$(date -Iseconds),end,${VERSION},${SESSION_DUR},${DECODE_FLAG:--none-}" >> "$STATS_FILE"
 echo "==> Session duration: ${SESSION_DUR}s"
+
+# ── Post-exit: wait for auto-updater, then clean up ─────────────────────────
+# The background overlay is already visible (Boosteroid's window is gone).
+# If the updater is installing com.boosteroid.Client, wait for it, clean up,
+# then exit — the user will see the overlay while waiting.
+if flatpak-spawn --host flatpak info com.boosteroid.Client > /dev/null 2>&1 \
+   || [ -f "${CACHE_DIR}/Boosteroid.flatpak" ]; then
+    echo "==> Boosteroid auto-updater active — showing update overlay..."
+    # Replace the blank keepalive with the text overlay
+    [ -n "${_KEEPALIVE_PID}" ] && kill "${_KEEPALIVE_PID}" 2>/dev/null
+    _KEEPALIVE_PID=""
+    if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+        python3 -c "
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk, GLib
+css = Gtk.CssProvider()
+css.load_from_data(b'''
+window { background: #1a1a2e; }
+label { color: rgba(255,255,255,0.85); }
+.title { font-size: 28px; font-weight: 300; }
+.sub { font-size: 16px; color: rgba(255,255,255,0.45); }
+.dots { font-size: 20px; color: rgba(79,195,247,0.7); }
+''')
+Gtk.StyleContext.add_provider_for_screen(
+    Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+w = Gtk.Window()
+w.set_decorated(False)
+w.fullscreen()
+b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+b.set_valign(Gtk.Align.CENTER)
+b.set_halign(Gtk.Align.CENTER)
+t = Gtk.Label(label='Updating Boosteroid')
+t.get_style_context().add_class('title')
+d = Gtk.Label(label='.')
+d.get_style_context().add_class('dots')
+s = Gtk.Label(label='This may take a moment')
+s.get_style_context().add_class('sub')
+r = Gtk.Label(label='Please restart the application after this screen closes')
+r.get_style_context().add_class('sub')
+r.set_margin_top(24)
+b.add(t)
+b.add(d)
+b.add(s)
+b.add(r)
+w.add(b)
+_n = [0]
+def _tick():
+    _n[0] = (_n[0] % 3) + 1
+    d.set_text('.' * _n[0])
+    return True
+GLib.timeout_add(600, _tick)
+w.show_all()
+Gtk.main()
+" &
+        _KEEPALIVE_PID=$!
+    fi
+    # Wait for install to complete
+    for _i in $(seq 1 20); do
+        if flatpak-spawn --host flatpak info com.boosteroid.Client > /dev/null 2>&1; then
+            echo "==> com.boosteroid.Client installed"
+            break
+        fi
+        sleep 2
+    done
+    # Wait for the post-install launch attempt to crash
+    echo "==> Waiting for updater to settle..."
+    sleep 8
+
+    # Always copy from com.boosteroid.Client — respects user-initiated
+    # upgrades AND downgrades (stable/unstable channel switches).
+    _client_base="${HOME}/.local/share/flatpak/app/com.boosteroid.Client/x86_64/master/active/files"
+    _client_bin="${_client_base}/bin/Boosteroid"
+
+    if flatpak-spawn --host test -f "${_client_bin}" 2>/dev/null; then
+        echo "==> Copying binary from com.boosteroid.Client"
+        flatpak-spawn --host cp "${_client_bin}" "${BINARY}" 2>&1 || true
+    fi
+
+    # Clean up
+    flatpak-spawn --host flatpak uninstall --user -y com.boosteroid.Client 2>/dev/null || true
+    rm -f "${CACHE_DIR}/Boosteroid.flatpak" 2>/dev/null || true
+    echo "==> Cleanup complete"
+fi
+
+# Kill the keepalive/overlay window
+[ -n "${_KEEPALIVE_PID}" ] && kill "${_KEEPALIVE_PID}" 2>/dev/null
+
+# Write session end
+echo "$(date -Iseconds),end,${VERSION},${SESSION_DUR},${DECODE_FLAG:--none-}" >> "$STATS_FILE"
 
 # Remove the running indicator now that Boosteroid has exited.
 rm -f "${STATUS_FILE}"
 echo "==> Boosteroid exited"
+
+# Kill background helpers (portal_openuri.py, boosteroid-fullscreen) so the
+# sandbox can exit cleanly — they hold the tee pipe open, blocking bwrap.
+kill $(jobs -p) 2>/dev/null || true

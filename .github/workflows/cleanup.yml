@@ -1,0 +1,200 @@
+name: Cleanup Artifacts and Runs
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Every Sunday at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      max_age_days:
+        description: 'Delete artifacts older than N days'
+        required: false
+        default: '7'
+      dry_run:
+        description: 'Preview deletions without removing anything'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      MAX_AGE_DAYS: ${{ inputs.max_age_days || '7' }}
+      DRY_RUN: ${{ inputs.dry_run || 'false' }}
+    steps:
+      - name: Clean failed and expired artifacts
+        uses: actions/github-script@v7
+        env:
+          MAX_AGE_DAYS: ${{ env.MAX_AGE_DAYS }}
+          DRY_RUN: ${{ env.DRY_RUN }}
+        with:
+          script: |
+            const maxAgeDays = parseInt(process.env.MAX_AGE_DAYS || '7', 10);
+            const dryRun = process.env.DRY_RUN === 'true';
+            const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+
+            core.info(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
+            core.info(`Cutoff: artifacts older than ${maxAgeDays} days (before ${cutoff.toISOString()})`);
+
+            let deleted = 0;
+            let skipped = 0;
+            let freedBytes = 0;
+
+            const runCache = new Map();
+            async function getRunConclusion(runId) {
+              if (runCache.has(runId)) return runCache.get(runId);
+              try {
+                const { data: run } = await github.rest.actions.getWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                });
+                runCache.set(runId, run.conclusion);
+                return run.conclusion;
+              } catch {
+                runCache.set(runId, 'unknown');
+                return 'unknown';
+              }
+            }
+
+            for await (const response of github.paginate.iterator(
+              github.rest.actions.listArtifactsForRepo,
+              { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 }
+            )) {
+              for (const artifact of response.data) {
+                if (artifact.expired) {
+                  core.info(`[EXPIRED] "${artifact.name}" (${artifact.id}) — created ${artifact.created_at}`);
+                  if (!dryRun) {
+                    await github.rest.actions.deleteArtifact({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      artifact_id: artifact.id,
+                    });
+                  }
+                  deleted++;
+                  freedBytes += artifact.size_in_bytes;
+                  continue;
+                }
+
+                const createdAt = new Date(artifact.created_at);
+                const conclusion = await getRunConclusion(artifact.workflow_run.id);
+                const isOld = createdAt < cutoff;
+                const isFailed = ['failure', 'cancelled', 'timed_out'].includes(conclusion);
+
+                if (isFailed || isOld) {
+                  const reason = isFailed ? `FAILED (${conclusion})` : 'OLD';
+                  core.info(`[${reason}] "${artifact.name}" (${artifact.id}) — created ${artifact.created_at}`);
+                  if (!dryRun) {
+                    await github.rest.actions.deleteArtifact({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      artifact_id: artifact.id,
+                    });
+                  }
+                  deleted++;
+                  freedBytes += artifact.size_in_bytes;
+                } else {
+                  skipped++;
+                }
+              }
+            }
+
+            const freedMB = (freedBytes / (1024 * 1024)).toFixed(2);
+            core.summary
+              .addHeading('Artifact Cleanup Results')
+              .addTable([
+                [{ data: 'Metric', header: true }, { data: 'Value', header: true }],
+                ['Mode', dryRun ? 'Dry Run' : 'Live'],
+                ['Deleted', `${deleted}`],
+                ['Skipped', `${skipped}`],
+                ['Freed', `${freedMB} MB`],
+              ])
+              .write();
+
+            core.info(`Done — ${deleted} deleted, ${skipped} skipped, ${freedMB} MB freed`);
+
+  cleanup-runs:
+    runs-on: ubuntu-latest
+    needs: cleanup
+    env:
+      MAX_AGE_DAYS: ${{ inputs.max_age_days || '7' }}
+      DRY_RUN: ${{ inputs.dry_run || 'false' }}
+    steps:
+      - name: Clean failed workflow runs
+        uses: actions/github-script@v7
+        env:
+          MAX_AGE_DAYS: ${{ env.MAX_AGE_DAYS }}
+          DRY_RUN: ${{ env.DRY_RUN }}
+        with:
+          script: |
+            const maxAgeDays = parseInt(process.env.MAX_AGE_DAYS || '7', 10);
+            const dryRun = process.env.DRY_RUN === 'true';
+            const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
+            const failedStatuses = ['failure', 'cancelled', 'timed_out', 'action_required', 'stale'];
+
+            core.info(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}`);
+            core.info(`Cutoff: runs older than ${maxAgeDays} days (before ${cutoff.toISOString()})`);
+
+            let deleted = 0;
+            let skipped = 0;
+
+            const { data: workflows } = await github.rest.actions.listRepoWorkflows({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            for (const workflow of workflows.workflows) {
+              for await (const response of github.paginate.iterator(
+                github.rest.actions.listWorkflowRuns,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflow.id,
+                  per_page: 100,
+                }
+              )) {
+                for (const run of response.data) {
+                  if (run.status !== 'completed') {
+                    skipped++;
+                    continue;
+                  }
+
+                  const createdAt = new Date(run.created_at);
+                  const isFailed = failedStatuses.includes(run.conclusion);
+                  const isOld = isFailed && createdAt < cutoff;
+
+                  if (isFailed) {
+                    const label = isOld ? `FAILED+OLD` : `FAILED`;
+                    core.info(`[${label}] ${workflow.name} #${run.run_number} (${run.conclusion}) — ${run.created_at}`);
+                    if (!dryRun) {
+                      await github.rest.actions.deleteWorkflowRun({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        run_id: run.id,
+                      });
+                    }
+                    deleted++;
+                  } else {
+                    skipped++;
+                  }
+                }
+              }
+            }
+
+            core.summary
+              .addHeading('Workflow Run Cleanup Results')
+              .addTable([
+                [{ data: 'Metric', header: true }, { data: 'Value', header: true }],
+                ['Mode', dryRun ? 'Dry Run' : 'Live'],
+                ['Runs deleted', `${deleted}`],
+                ['Runs skipped', `${skipped}`],
+              ])
+              .write();
+
+            core.info(`Done — ${deleted} runs deleted, ${skipped} skipped`);

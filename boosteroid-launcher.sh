@@ -305,17 +305,23 @@ _close_previous_session
 # session alive when Boosteroid exits for an auto-update.  Invisible during
 # normal gameplay (Boosteroid is fullscreen on top).  Killed immediately on
 # normal exit so the user never sees it.
+# GLib.set_prgname() must precede the Gtk import: GTK3 titles windows after
+# the program name, which for 'python3 -c' is literally '-c' — Gamescope
+# would otherwise list a second window called "-c".
 _KEEPALIVE_PID=""
 if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
     python3 -c "
 import gi
 gi.require_version('Gtk', '3.0')
+from gi.repository import GLib
+GLib.set_prgname('Boosteroid')
 from gi.repository import Gtk, Gdk
 css = Gtk.CssProvider()
 css.load_from_data(b'window { background: #1a1a2e; }')
 Gtk.StyleContext.add_provider_for_screen(
     Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 w = Gtk.Window()
+w.set_title('Boosteroid')
 w.set_decorated(False)
 w.fullscreen()
 w.show_all()
@@ -377,7 +383,9 @@ if flatpak-spawn --host flatpak info com.boosteroid.Client > /dev/null 2>&1 \
         python3 -c "
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GLib
+from gi.repository import GLib
+GLib.set_prgname('Boosteroid')
+from gi.repository import Gtk, Gdk
 css = Gtk.CssProvider()
 css.load_from_data(b'''
 window { background: #1a1a2e; }
@@ -389,6 +397,7 @@ label { color: rgba(255,255,255,0.85); }
 Gtk.StyleContext.add_provider_for_screen(
     Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 w = Gtk.Window()
+w.set_title('Boosteroid')
 w.set_decorated(False)
 w.fullscreen()
 b = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
@@ -445,6 +454,20 @@ Gtk.main()
     flatpak-spawn --host flatpak uninstall --user -y com.boosteroid.Client 2>/dev/null || true
     rm -f "${CACHE_DIR}/Boosteroid.flatpak" 2>/dev/null || true
     echo "==> Cleanup complete"
+
+    # ── Stale-bundle fallback ────────────────────────────────────────────────
+    # Boosteroid sometimes publishes a new version to Updates.xml and the .deb
+    # but not to the .flatpak bundle its Linux updater downloads, so the copy
+    # above yields the OLD version and the client prompts forever.  Compare the
+    # installed binary with what the channel Boosteroid just downloaded from
+    # advertises; if it is older, install that channel's .deb instead.  The
+    # channel is read from Boosteroid's own log, so stable/beta switches are
+    # followed, never overridden.  No-op once Boosteroid ships a correct bundle.
+    echo "==> Verifying installed version against channel manifest..."
+    python3 /app/lib/boosteroid/update_fallback.py \
+        --log "${XDG_DATA_HOME}/Boosteroid Games S.R.L./bstr_client.log" \
+        --install-dir "${INSTALL_DIR}" \
+        || echo "Warning: stale-bundle fallback failed (exit $?)"
 fi
 
 # Kill the keepalive/overlay window

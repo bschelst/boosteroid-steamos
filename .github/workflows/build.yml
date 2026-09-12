@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Syntax-check Python and run unit tests
+        run: |
+          python3 -m py_compile src/*.py
+          python3 -m unittest discover -s tests -v
+
       - name: Install Flatpak tools
         run: |
           sudo add-apt-repository -y ppa:flatpak/stable

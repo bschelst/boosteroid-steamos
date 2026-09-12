@@ -17,6 +17,7 @@ This project downloads and runs the **official, unmodified native Boosteroid bin
 
 - **One-click install** from Desktop Mode via the included `.desktop` installer
 - **First-run auto-setup**: downloads the official Boosteroid client on first launch — no manual steps
+- **In-app updates that actually land**: Boosteroid's own updater is used as-is; if the update bundle it ships is out of date (a recurring Boosteroid-side issue), the official `.deb` for your channel (stable or beta) is installed instead
 - **Steam library integration**: automatically adds Boosteroid as a shortcut with controller layout and grid artwork
 - **Hardware-accelerated video** on Steam Deck: AMD VA-API enabled automatically
 - **H.264 / H.265 codec forcing** via opt-in env vars for cleaner visuals at the same bitrate
@@ -243,6 +244,10 @@ First, check the [service status page](#-boosteroid-service-status) to rule out 
 ```bash
 flatpak run org.schelstraete.boosteroid -s
 ```
+
+**Boosteroid keeps asking to update to the same version**
+
+Boosteroid publishes its Linux update as a Flatpak bundle, and that bundle sometimes lags behind the version their update server advertises — the client then installs the old build and prompts again on the next launch. This project detects that after the client exits: it compares the installed version with the version advertised for your channel (stable or beta) and, if the bundle was stale, installs the official `.deb` for that channel instead. Accept the update prompt once, quit Boosteroid, and the next launch will be on the new version. Details are logged to `~/logs/boosteroid.log` under `[deb-fallback]`.
 
 **Controller not detected**
 

@@ -68,6 +68,7 @@ modules:
       - install -Dm755 src/splash.py /app/lib/boosteroid/splash.py
       - install -Dm755 src/portal_openuri.py /app/lib/boosteroid/portal_openuri.py
       - install -Dm755 src/install_boosteroid.py /app/lib/boosteroid/install_boosteroid.py
+      - install -Dm755 src/update_fallback.py /app/lib/boosteroid/update_fallback.py
       - install -Dm755 src/add-to-steam.py /app/lib/boosteroid/add-to-steam.py
       - install -Dm644 src/vdf.py /app/lib/boosteroid/vdf.py
       - install -Dm644 org.schelstraete.boosteroid.desktop /app/share/applications/org.schelstraete.boosteroid.desktop

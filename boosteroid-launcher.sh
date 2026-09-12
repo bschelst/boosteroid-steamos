@@ -463,10 +463,14 @@ Gtk.main()
     # advertises; if it is older, install that channel's .deb instead.  The
     # channel is read from Boosteroid's own log, so stable/beta switches are
     # followed, never overridden.  No-op once Boosteroid ships a correct bundle.
+    # boosteroid.log is truncated every launch, so the decisions are also
+    # appended to ~/logs/boosteroid-updates.log for post-mortems.
     echo "==> Verifying installed version against channel manifest..."
+    echo "=== $(date) (Boosteroid SteamOS ${VERSION}) ===" >> "$HOME/logs/boosteroid-updates.log"
     python3 /app/lib/boosteroid/update_fallback.py \
         --log "${XDG_DATA_HOME}/Boosteroid Games S.R.L./bstr_client.log" \
         --install-dir "${INSTALL_DIR}" \
+        2>&1 | tee -a "$HOME/logs/boosteroid-updates.log" \
         || echo "Warning: stale-bundle fallback failed (exit $?)"
 fi
 

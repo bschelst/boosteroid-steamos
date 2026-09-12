@@ -127,16 +127,41 @@ class Decision(unittest.TestCase):
         self.assertEqual(uf.decide((1, 11, 25), (1, 11, 24), "", "latest:1.11.24"), "up-to-date")
 
     def test_already_attempted(self):
+        # The .deb turned out to be stale or broken: do not re-download it for
+        # the same remote version.
+        for outcome in ("stale", "failed"):
+            self.assertEqual(
+                uf.decide((1, 11, 22), (1, 11, 24), f"latest:1.11.24:{outcome}", "latest:1.11.24"),
+                "already-attempted", outcome,
+            )
+
+    def test_regressed_after_successful_install_retries(self):
+        # The .deb DID work earlier, but a later stale-bundle copy put the old
+        # binary back.  The .deb is known-good, so run the fallback again.
         self.assertEqual(
-            uf.decide((1, 11, 22), (1, 11, 24), "latest:1.11.24", "latest:1.11.24"),
-            "already-attempted",
+            uf.decide((1, 11, 22), (1, 11, 24), "latest:1.11.24:installed", "latest:1.11.24"),
+            "fallback",
+        )
+
+    def test_legacy_state_without_outcome_retries(self):
+        # v1.1.35 wrote "channel:version" with no outcome.  Unknown outcome
+        # must not block: one extra download unsticks those installs.
+        self.assertEqual(
+            uf.decide((1, 11, 22), (1, 11, 24), "latest:1.11.24", "latest:1.11.24"), "fallback"
+        )
+        self.assertEqual(
+            uf.decide((1, 11, 22), (1, 11, 24), "garbage", "latest:1.11.24"), "fallback"
         )
 
     def test_fallback_needed(self):
         self.assertEqual(uf.decide((1, 11, 20), (1, 11, 24), "", "latest:1.11.24"), "fallback")
         # A new remote version resets the attempt guard.
         self.assertEqual(
-            uf.decide((1, 11, 22), (1, 11, 26), "latest:1.11.24", "latest:1.11.26"), "fallback"
+            uf.decide((1, 11, 22), (1, 11, 26), "latest:1.11.24:stale", "latest:1.11.26"), "fallback"
+        )
+        # A different channel resets it too.
+        self.assertEqual(
+            uf.decide((1, 11, 22), (1, 11, 24), "stable:1.11.24:stale", "latest:1.11.24"), "fallback"
         )
 
 
@@ -233,14 +258,33 @@ class RunEndToEnd(unittest.TestCase):
         self.assertEqual(self._run(), 0)
         self.assertEqual(self.downloaded, [uf.channel_urls(BETA_URL).deb])
         self.assertEqual(uf.binary_version(self.install_dir / uf.BINARY_REL), (1, 11, 24))
-        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24")
+        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24:installed")
 
     def test_second_run_after_stale_deb_does_not_redownload(self):
         self._run(deb_version="1.11.22")
         self.assertEqual(len(self.downloaded), 1)
-        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24")
+        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24:stale")
         self._run(deb_version="1.11.22")
         self.assertEqual(len(self.downloaded), 1, "must not download again for the same remote version")
+
+    def test_bundle_regression_after_success_is_healed_again(self):
+        # Exactly what happened on the Deck: the .deb healed the install, then
+        # Boosteroid's stale bundle was copied over it again on a later exit.
+        self._run()
+        self.assertEqual(uf.binary_version(self.install_dir / uf.BINARY_REL), (1, 11, 24))
+        fake_binary(self.install_dir / uf.BINARY_REL, "1.11.22")
+        self._run()
+        self.assertEqual(len(self.downloaded), 2, "a known-good .deb must be re-applied")
+        self.assertEqual(uf.binary_version(self.install_dir / uf.BINARY_REL), (1, 11, 24))
+        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24:installed")
+
+    def test_legacy_state_file_is_not_a_permanent_block(self):
+        # Installs upgraded from v1.1.35 carry a two-field state file.
+        uf.state_path(self.install_dir).write_text("latest:1.11.24\n")
+        self._run()
+        self.assertEqual(len(self.downloaded), 1)
+        self.assertEqual(uf.binary_version(self.install_dir / uf.BINARY_REL), (1, 11, 24))
+        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24:installed")
 
     def test_up_to_date_is_noop(self):
         fake_binary(self.install_dir / uf.BINARY_REL, "1.11.24")
@@ -266,7 +310,7 @@ class RunEndToEnd(unittest.TestCase):
                     fetch=lambda url: UPDATES_XML, download=self._download, extract=extract)
         self.assertEqual(rc, 0)
         self.assertEqual(uf.binary_version(self.install_dir / uf.BINARY_REL), (1, 11, 22))
-        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24",
+        self.assertEqual(uf.read_state(self.install_dir), "latest:1.11.24:failed",
                          "a broken .deb must not be re-downloaded on every launch")
         self.assertEqual(sorted(p.name for p in self.root.iterdir()), ["boosteroid", "bstr_client.log"])
 

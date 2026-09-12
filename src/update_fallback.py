@@ -13,10 +13,13 @@ downloaded from Boosteroid's own log and derives the matching Updates.xml and
 .deb URLs from it.  If the installed binary is older than what that channel
 advertises, the channel's .deb is downloaded and installed over the tree.
 
-One attempt per (channel, remote version) is recorded so a .deb that is also
-stale does not trigger an 80 MB download on every launch.  A new remote
-version resets that guard.  Once Boosteroid ships a correct bundle the version
-check passes and this script is a no-op.
+The outcome of each attempt is recorded per (channel, remote version).  A .deb
+that was itself stale or broken is not re-downloaded (80 MB) on every launch;
+a new remote version resets that guard.  A .deb that DID install is a
+known-good fix and is applied again whenever the binary regresses -- which
+happens every time Boosteroid's stale bundle is copied back over the tree.
+Once Boosteroid ships a correct bundle the version check passes and this
+script is a no-op.
 
 Stdlib only -- runs inside the Flatpak sandbox.
 """
@@ -39,6 +42,11 @@ import install_boosteroid
 
 BINARY_REL = "opt/BoosteroidGamesS.R.L./bin/Boosteroid"
 STATE_FILE = ".deb-fallback-attempted"
+# Outcomes recorded in STATE_FILE.  Only the last two block a retry.
+OUTCOME_INSTALLED = "installed"
+OUTCOME_STALE = "stale"
+OUTCOME_FAILED = "failed"
+NO_RETRY_OUTCOMES = frozenset({OUTCOME_STALE, OUTCOME_FAILED})
 ALLOWED_HOST = "boosteroid.com"
 DEB_NAME = "boosteroid-install-x64.deb"
 # boosteroid.com returns 403 for curl's default UA; a browser-style UA is accepted.
@@ -166,17 +174,26 @@ def read_state(install_dir):
         return ""
 
 
-def write_state(install_dir, key):
+def write_state(install_dir, key, outcome):
+    """Record 'channel:version:outcome', outcome in OUTCOMES."""
     path = state_path(install_dir)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(key + "\n")
+    tmp.write_text(f"{key}:{outcome}\n")
     os.replace(tmp, path)
 
 
-def decide(local, remote, attempted_key, key):
+def decide(local, remote, state, key):
+    """'up-to-date', 'already-attempted' or 'fallback'.
+
+    Only a recorded 'stale' or 'failed' outcome for this exact key blocks a
+    retry.  'installed' means the .deb is known to work and the binary has
+    regressed since, so it is applied again.  A legacy two-field state (from
+    v1.1.35) or anything unparseable is treated as unknown -> retry once.
+    """
     if local >= remote:
         return "up-to-date"
-    if attempted_key == key:
+    attempted_key, _, outcome = state.rpartition(":")
+    if attempted_key == key and outcome in NO_RETRY_OUTCOMES:
         return "already-attempted"
     return "fallback"
 
@@ -270,14 +287,17 @@ def run(log_path, install_dir, dry_run, fetch=fetch, download=download,
             log(f"download failed: {exc}")
             return 0
         installed = None
+        outcome = OUTCOME_FAILED
         try:
             installed = install_deb(deb_path, install_dir, local, extract)
+            outcome = OUTCOME_INSTALLED if installed else OUTCOME_STALE
         except (OSError, ValueError, RuntimeError, tarfile.TarError) as exc:
             log(f"install failed: {exc}")
-        # Record the attempt whether the .deb was newer, stale or broken: it
-        # must not be re-downloaded until Boosteroid advertises a new version.
+        # Record the outcome: a stale or broken .deb must not be re-downloaded
+        # until Boosteroid advertises a new version, but a .deb that installed
+        # fine must be re-applied the next time the bundle regresses the binary.
         try:
-            write_state(install_dir, key)
+            write_state(install_dir, key, outcome)
         except OSError as exc:
             log(f"cannot record attempt ({exc})")
     if installed:

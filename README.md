@@ -172,18 +172,21 @@ flatpak run org.schelstraete.boosteroid -cuda     # CUDA (NVIDIA with CUDA)
 flatpak run org.schelstraete.boosteroid -s        # software decoder
 ```
 
-See also **[Force codec](#%EF%B8%8F-force-codec-h264--h265--experimental)** below for controlling *which codec* the server sends, independent of how the client decodes it.
+See also **[Force codec](#%EF%B8%8F-force-codec-h264--h265--av1--experimental)** below for controlling *which codec* the server sends, independent of how the client decodes it.
 
-### 🎞️ Force codec (H.264 / H.265) — experimental
+### 🎞️ Force codec (H.264 / H.265 / AV1) — experimental
 
 The Boosteroid Linux client tends to default to **H.264** even on hardware that can decode HEVC. The Steam Deck APU (AMD VCN 3.0) has full hardware HEVC decode, so forcing H.265 can deliver cleaner visuals at the same bitrate.
 
-Two opt-in environment variables are honored by the launcher:
+Three opt-in environment variables are honored by the launcher (only one applies; precedence H.265 → H.264 → AV1):
 
 | Env var | Effect |
 |---|---|
 | `BOOSTEROID_FORCE_H265=1` | Pass `-h265` to the Boosteroid binary (force HEVC) |
 | `BOOSTEROID_FORCE_H264=1` | Pass `-h264` to the Boosteroid binary (force H.264) |
+| `BOOSTEROID_FORCE_AV1=1` | Pass `-av1` to the Boosteroid binary (force AV1 — client 1.11.24+, see below) |
+
+**AV1 and the Steam Deck:** the Boosteroid client (1.11.24 beta and later) supports AV1, but only with a **hardware** AV1 decoder — it ships no software fallback. The Steam Deck's APU (VCN 3.0) cannot decode AV1, so on the Deck the client logs `Your platform doesn't support hardware accelerated AV1 decoding` and falls back to H.264/H.265 whatever you force. `BOOSTEROID_FORCE_AV1` is only useful on other hardware running this Flatpak (e.g. Bazzite on an RDNA3+ APU such as ROG Ally / Legion Go, Intel Arc, or NVIDIA RTX 30+). On those devices the client normally picks AV1 by itself — at startup it benchmarks every codec/decoder pair and elects the best one — so leave all three variables unset unless you need to override that choice.
 
 Set via Steam **Launch Options**:
 
@@ -201,11 +204,13 @@ flatpak override --user --reset org.schelstraete.boosteroid    # back to default
 After launching a stream, check what was actually negotiated:
 
 ```bash
-grep -E "H265 codec/parser opened|H264 codec/parser opened" ~/logs/boosteroid.log
+grep -E "Codec preference|ELECTED|codec(/parser)? opened" ~/logs/boosteroid.log
 ```
 
-- **Two `codec/parser opened` lines** (one `H264` + one `H265`) — the stream is running H.265
-- **One line only** (`H264`) — the stream is running H.264 (the H.264 parser is used for both the startup probe and the stream, so no second line appears)
+- `Codec preference: "h265" (forced -h265)` (or `-h264` / `-av1`) — the launcher's flag was picked up; `(auto; AV1 elected)` / `(auto; AV1 not elected)` means no flag was set and the client chose by itself
+- The `CODEC  DECODER  DEFAULT  80Mb` benchmark table shows every codec the client tested; the `<== ELECTED` row is what it will use. `FAIL` on the `av1` row means your GPU has no AV1 hardware decode
+- **Client 1.11.22 and older:** two `codec/parser opened` lines (one `H264` + one `H265`) means the stream is running H.265; one line only (`H264`) means H.264 (the H.264 parser is used for both the startup probe and the stream)
+- **Client 1.11.24 and newer:** the line is `<CODEC> codec opened — decoder: <name> accel: <vaapi|…>`; look for an `H265 codec opened` or `AV1 codec opened` line — an `H264 codec opened` line on its own is the startup probe / H.264 stream
 
 > **Note:** These flags are undocumented by Boosteroid and were discovered by inspecting the binary. They may stop working in a future Boosteroid client update.
 

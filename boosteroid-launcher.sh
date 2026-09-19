@@ -97,6 +97,9 @@ fi
 # Boosteroid's hidden CLI flags discovered via `strings` on the binary:
 #   -h264   force h264 codec
 #   -h265   force h265 codec (HEVC — Steam Deck VCN3 supports HW decode)
+#   -av1    force AV1 codec (client >= 1.11.24; needs HW AV1 decode — RDNA3+,
+#           Intel Arc, RTX 30+. The Steam Deck's VCN3 has none and the client
+#           ships no software AV1 decoder, so on the Deck it falls back.)
 #   -4k     advertise 4K capability to the server (useful when Gamescope
 #           composition is set to 1440p/4K on a docked Deck)
 # Pass via Steam launch options, e.g.:
@@ -117,6 +120,9 @@ if [ "${BOOSTEROID_FORCE_H265:-0}" = "1" ]; then
 elif [ "${BOOSTEROID_FORCE_H264:-0}" = "1" ]; then
     CODEC_FLAG="-h264"
     echo "==> BOOSTEROID_FORCE_H264=1: forcing H.264 codec"
+elif [ "${BOOSTEROID_FORCE_AV1:-0}" = "1" ]; then
+    CODEC_FLAG="-av1"
+    echo "==> BOOSTEROID_FORCE_AV1=1: forcing AV1 codec (requires HW AV1 decode)"
 fi
 
 RES_FLAG=""

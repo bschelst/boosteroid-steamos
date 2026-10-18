@@ -358,8 +358,10 @@ echo "${BOOSTEROID_PID}" > "${STATUS_FILE}"
 echo "==> Boosteroid started (PID ${BOOSTEROID_PID}) flags: ${DECODE_FLAG} ${CODEC_FLAG} ${RES_FLAG}"
 echo "$(date -Iseconds),start,${VERSION},0,${DECODE_FLAG:--none-}${CODEC_FLAG:+ ${CODEC_FLAG}}${RES_FLAG:+ ${RES_FLAG}}" >> "$STATS_FILE"
 
-wait "${BOOSTEROID_PID}"
-EXIT_CODE=$?
+# Keep wait in an OR-list so set -e does not terminate the launcher before the
+# updater post-exit handler can clean up and run the stale-bundle fallback.
+EXIT_CODE=0
+wait "${BOOSTEROID_PID}" || EXIT_CODE=$?
 
 # Boosteroid's built-in updater replaces the binary on disk while the old process
 # is still alive, causing a segfault (signal 139).  The update succeeded — the
